@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type Program = {
   id: string; school: string; rank: number; program: string; degree: string;
-  region?: "美国"|"香港"|"加拿大";
+  region?: "美国"|"香港"|"加拿大"|"英国"|"澳大利亚";
   field: string; deadline: string; letters: string; cv: string; sop: string;
   gre: string; credits: string; duration: string; verified: "已核实" | "待复核";
   source: string; tracks: { name: string; courses: string[] }[];
@@ -33,19 +33,26 @@ const SCHOOL_NAMES: Record<string, string> = {
   "Virginia Polytechnic Institute and State University":"弗吉尼亚理工大学",
   "The University of Hong Kong":"香港大学", "The Chinese University of Hong Kong":"香港中文大学",
   "The Hong Kong University of Science and Technology":"香港科技大学",
-  "University of Toronto":"多伦多大学", "University of British Columbia":"英属哥伦比亚大学", "McGill University":"麦吉尔大学"
+  "University of Toronto":"多伦多大学", "University of British Columbia":"英属哥伦比亚大学", "McGill University":"麦吉尔大学", "University of Waterloo":"滑铁卢大学",
+  "City University of Hong Kong":"香港城市大学", "Hong Kong Polytechnic University":"香港理工大学", "Hong Kong Baptist University":"香港浸会大学", "Lingnan University":"岭南大学", "Education University of Hong Kong":"香港教育大学",
+  "Imperial College London":"帝国理工学院", "University of Oxford":"牛津大学", "University of Cambridge":"剑桥大学", "University College London":"伦敦大学学院", "University of Edinburgh":"爱丁堡大学", "King's College London":"伦敦国王学院", "University of Manchester":"曼彻斯特大学", "University of Bristol":"布里斯托大学", "London School of Economics and Political Science":"伦敦政治经济学院", "University of Warwick":"华威大学", "University of Birmingham":"伯明翰大学", "University of Glasgow":"格拉斯哥大学", "University of Leeds":"利兹大学", "University of Sheffield":"谢菲尔德大学", "Durham University":"杜伦大学", "University of Nottingham":"诺丁汉大学",
+  "Adelaide University":"阿德莱德大学", "Australian National University":"澳大利亚国立大学", "University of Melbourne":"墨尔本大学", "Monash University":"莫纳什大学", "University of New South Wales":"新南威尔士大学", "University of Queensland":"昆士兰大学", "University of Sydney":"悉尼大学", "University of Western Australia":"西澳大学"
 };
 
 type CostProfile = { tuition:string; shared:string; privateRoom:string; note:string };
 const HIGH_COST = new Set(["Stanford University","Massachusetts Institute of Technology","Harvard University","Columbia University","University of California, Berkeley","University of California, Los Angeles","University of Southern California","New York University","Boston University","Northeastern University"]);
 const LOWER_COST = new Set(["University of Michigan–Ann Arbor","University of Notre Dame","University of Florida","University of Illinois Urbana-Champaign","University of Wisconsin–Madison","Ohio State University","Purdue University","University of Georgia","University of Rochester"]);
 const PRIVATE_SCHOOLS = new Set(["Princeton University","Massachusetts Institute of Technology","Harvard University","Stanford University","University of Pennsylvania","California Institute of Technology","Cornell University","Brown University","Columbia University","Duke University","Johns Hopkins University","Northwestern University","Rice University","Vanderbilt University","Carnegie Mellon University","University of Notre Dame","Washington University in St. Louis","University of Southern California","New York University","Tufts University","Boston University","Lehigh University","Northeastern University","University of Rochester"]);
-const HONG_KONG_SCHOOLS = new Set(["The University of Hong Kong","The Chinese University of Hong Kong","The Hong Kong University of Science and Technology"]);
-const CANADIAN_SCHOOLS = new Set(["University of Toronto","University of British Columbia","McGill University"]);
+const HONG_KONG_SCHOOLS = new Set(["The University of Hong Kong","The Chinese University of Hong Kong","The Hong Kong University of Science and Technology","City University of Hong Kong","Hong Kong Polytechnic University","Hong Kong Baptist University","Lingnan University","Education University of Hong Kong"]);
+const CANADIAN_SCHOOLS = new Set(["University of Toronto","University of British Columbia","McGill University","University of Waterloo"]);
+const BRITISH_SCHOOLS = new Set(["Imperial College London","University of Oxford","University of Cambridge","University College London","University of Edinburgh","King's College London","University of Manchester","University of Bristol","London School of Economics and Political Science","University of Warwick","University of Birmingham","University of Glasgow","University of Leeds","University of Sheffield","Durham University","University of Nottingham"]);
+const AUSTRALIAN_SCHOOLS = new Set(["Adelaide University","Australian National University","University of Melbourne","Monash University","University of New South Wales","University of Queensland","University of Sydney","University of Western Australia"]);
 const RENTAL_NOTE = "通常需护照/身份证明、录取或在读证明、押金与首月房租；没有当地信用记录时，可能需要担保人或预付数月房租。";
 const costFor = (school:string):CostProfile => {
   if (HONG_KONG_SCHOOLS.has(school)) return {tuition:"约 HK$180,000–320,000/项目",shared:"约 HK$5,500–10,000/月",privateRoom:"约 HK$12,000–25,000/月",note:RENTAL_NOTE};
   if (CANADIAN_SCHOOLS.has(school)) return {tuition:"约 C$25,000–70,000/学年（国际生）",shared:"约 C$900–1,800/月",privateRoom:"约 C$1,500–3,000/月",note:RENTAL_NOTE};
+  if (BRITISH_SCHOOLS.has(school)) return {tuition:"约 £28,000–45,000/项目（国际生）",shared:"约 £650–1,300/月",privateRoom:"约 £950–2,000/月",note:RENTAL_NOTE};
+  if (AUSTRALIAN_SCHOOLS.has(school)) return {tuition:"约 A$48,000–65,000/学年（国际生）",shared:"约 A$900–1,700/月",privateRoom:"约 A$1,500–2,800/月",note:RENTAL_NOTE};
   return {
     tuition:PRIVATE_SCHOOLS.has(school) ? "约 US$55,000–75,000/学年" : "约 US$30,000–60,000/学年（国际生）",
     shared:HIGH_COST.has(school) ? "约 US$1,000–1,800/月" : LOWER_COST.has(school) ? "约 US$600–1,000/月" : "约 US$750–1,300/月",
@@ -147,7 +154,42 @@ const REGIONAL_PROGRAMS: Program[] = [
   {...relatedProgram("mcgill-me","McGill University",3,"Mechanical Engineering","MEng","机械工程","https://www.mcgill.ca/mecheng/grad",[{name:"Design & Manufacturing",courses:["Design","Manufacturing","Materials"]},{name:"Dynamics & Control",courses:["Dynamics","Control","Robotics"]}]),region:"加拿大"}
 ];
 
-const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS, ...REGIONAL_PROGRAMS].sort((a,b)=>a.rank-b.rank || a.school.localeCompare(b.school));
+const EXPANDED_PROGRAMS: Program[] = [
+  {...relatedProgram("cityu-me","City University of Hong Kong",4,"Mechanical Engineering","MSc","机械工程","https://www.cityu.edu.hk/mae/academic-programmes/postgraduate-programmes",[{name:"Advanced Mechanical Systems",courses:["Advanced Mechanics","Control Systems","Engineering Design"]},{name:"Energy & Manufacturing",courses:["Energy Systems","Advanced Manufacturing","Materials Engineering"]}]),region:"香港"},
+  {...relatedProgram("polyu-me","Hong Kong Polytechnic University",5,"Mechanical Engineering","MSc","机械工程","https://www.polyu.edu.hk/me/study/taught-postgraduate-programmes/",[{name:"Product Development",courses:["Product Design","Computer Aided Engineering","Advanced Manufacturing"]},{name:"Energy & Transport",courses:["Thermofluids","Energy Systems","Vehicle Engineering"]}]),region:"香港"},
+  {...relatedProgram("hkbu-none","Hong Kong Baptist University",6,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://gs.hkbu.edu.hk/",[]),region:"香港"},
+  {...relatedProgram("lingnan-none","Lingnan University",7,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.ln.edu.hk/sgs/",[]),region:"香港"},
+  {...relatedProgram("eduhk-none","Education University of Hong Kong",8,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.eduhk.hk/gradsch/",[]),region:"香港"},
+  {...relatedProgram("waterloo-meng","University of Waterloo",4,"Mechanical and Mechatronics Engineering","MEng","机械/机电","https://uwaterloo.ca/future-graduate-students/programs/by-faculty/engineering/mechanical-and-mechatronics-engineering-master-engineering",[{name:"Mechanical Engineering",courses:["Advanced Engineering Analysis","Mechanical Design","Thermofluids"]},{name:"Mechatronics",courses:["Mechatronic Systems","Robotics","Control Systems"]}]),region:"加拿大"},
+
+  {...relatedProgram("imperial-ame","Imperial College London",2,"Advanced Mechanical Engineering","MSc","机械工程","https://www.imperial.ac.uk/study/courses/postgraduate-taught/advanced-mechanical-engineering/",[{name:"Design & Manufacturing",courses:["Design Engineering","Advanced Manufacturing","Finite Element Analysis"]},{name:"Thermofluids",courses:["Advanced Fluid Mechanics","Heat Transfer","Energy Systems"]}]),region:"英国"},
+  {...relatedProgram("oxford-none","University of Oxford",4,"暂无匹配的授课型机械工程硕士","N/A","暂无匹配项目","https://eng.ox.ac.uk/study/graduate",[]),region:"英国"},
+  {...relatedProgram("cambridge-mphil","University of Cambridge",6,"Engineering","MPhil","机械与工程","https://www.postgraduate.study.cam.ac.uk/courses/directory/egegmpmeg",[{name:"Energy, Fluid Mechanics and Turbomachinery",courses:["Fluid Mechanics","Turbomachinery","Energy Technologies"]},{name:"Mechanics, Materials and Design",courses:["Solid Mechanics","Materials","Engineering Design"]}]),region:"英国"},
+  {...relatedProgram("ucl-me","University College London",8,"Mechanical Engineering","MSc","机械工程","https://www.ucl.ac.uk/prospective-students/graduate/taught-degrees/mechanical-engineering-msc",[{name:"Mechanical Systems",courses:["Advanced Mechanical Engineering","Vibrations","Control"]},{name:"Energy & Fluids",courses:["Thermofluids","Energy Systems","Heat Transfer"]}]),region:"英国"},
+  {...relatedProgram("edinburgh-me","University of Edinburgh",35,"Mechanical Engineering related programmes","MSc","机械/能源","https://study.ed.ac.uk/programmes/postgraduate-taught/963-advanced-power-engineering",[{name:"Advanced Power Engineering",courses:["Power Plant Technologies","Energy Systems","Thermal Engineering"]}]),region:"英国"},
+  {...relatedProgram("kcl-none","King's College London",37,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.kcl.ac.uk/study/postgraduate-taught",[]),region:"英国"},
+  {...relatedProgram("manchester-me","University of Manchester",40,"Advanced Mechanical Engineering","MSc","机械工程","https://www.manchester.ac.uk/study/masters/courses/list/08320/msc-advanced-mechanical-engineering/",[{name:"Design & Reliability",courses:["Engineering Design","Structural Integrity","Finite Element Analysis"]},{name:"Thermofluids",courses:["Computational Fluid Dynamics","Heat Transfer","Energy Systems"]}]),region:"英国"},
+  {...relatedProgram("lse-none","London School of Economics and Political Science",56,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.lse.ac.uk/study-at-lse/Graduate",[]),region:"英国"},
+  {...relatedProgram("bristol-me","University of Bristol",57,"Mechanical Engineering","MSc","机械工程","https://www.bristol.ac.uk/study/postgraduate/taught/msc-engineering-with-management/",[{name:"Engineering Systems",courses:["Systems Engineering","Engineering Design","Project Management"]}]),region:"英国"},
+  {...relatedProgram("warwick-me","University of Warwick",68,"Advanced Mechanical Engineering","MSc","机械工程","https://warwick.ac.uk/study/postgraduate/courses/msc-advanced-mechanical-engineering/",[{name:"Advanced Mechanical Systems",courses:["Advanced Robotics","CAE","Dynamic Analysis"]},{name:"Manufacturing",courses:["Advanced Manufacturing","Materials","Design"]}]),region:"英国"},
+  {...relatedProgram("birmingham-me","University of Birmingham",76,"Advanced Mechanical Engineering","MSc","机械工程","https://www.birmingham.ac.uk/postgraduate/courses/taught/mechanical-engineering/advanced-mechanical-engineering-msc",[{name:"Mechanical Design",courses:["Engineering Design","Finite Element Analysis","Advanced Mechanics"]},{name:"Energy",courses:["Thermofluids","Energy Systems","Heat Transfer"]}]),region:"英国"},
+  {...relatedProgram("glasgow-me","University of Glasgow",79,"Mechanical Engineering","MSc","机械工程","https://www.gla.ac.uk/postgraduate/taught/mechanicalengineering/",[{name:"Design & Dynamics",courses:["Dynamics","Control","Engineering Design"]},{name:"Energy & Fluids",courses:["Fluid Mechanics","Heat Transfer","Energy Conversion"]}]),region:"英国"},
+  {...relatedProgram("sheffield-me","University of Sheffield",82,"Advanced Mechanical Engineering","MSc","机械工程","https://www.sheffield.ac.uk/postgraduate/taught/courses/2026/advanced-mechanical-engineering-msceng",[{name:"Advanced Manufacturing",courses:["Manufacturing Technology","Composite Materials","Engineering Design"]},{name:"Thermofluids",courses:["Computational Fluid Dynamics","Heat Transfer","Energy"]}]),region:"英国"},
+  {...relatedProgram("leeds-me","University of Leeds",86,"Advanced Mechanical Engineering","MSc","机械工程","https://courses.leeds.ac.uk/i546/advanced-mechanical-engineering-msc-eng-",[{name:"Design & Manufacturing",courses:["Engineering Design","Manufacturing","Computational Mechanics"]},{name:"Energy",courses:["Thermofluids","Energy Systems","Heat Transfer"]}]),region:"英国"},
+  {...relatedProgram("durham-me","Durham University",94,"Advanced Mechanical Engineering","MSc","机械工程","https://www.durham.ac.uk/study/courses/advanced-mechanical-engineering-msc-h3k209/",[{name:"Advanced Engineering",courses:["Advanced Mechanics","Thermofluids","Engineering Design"]}]),region:"英国"},
+  {...relatedProgram("nottingham-me","University of Nottingham",97,"Mechanical Engineering","MSc","机械工程","https://www.nottingham.ac.uk/pgstudy/course/taught/mechanical-engineering-msc",[{name:"Manufacturing & Materials",courses:["Advanced Manufacturing","Materials","Design"]},{name:"Thermofluids",courses:["Fluid Mechanics","Heat Transfer","Energy"]}]),region:"英国"},
+
+  {...relatedProgram("unsw-me","University of New South Wales",19,"Engineering Science (Mechanical Engineering)","MEngSc","机械工程","https://www.unsw.edu.au/study/postgraduate/master-of-engineering-science-mechanical-engineering",[{name:"Mechanical Systems",courses:["Advanced Mechanics","Mechanical Design","Control"]},{name:"Energy & Manufacturing",courses:["Energy Systems","Manufacturing","Thermofluids"]}]),region:"澳大利亚"},
+  {...relatedProgram("melbourne-me","University of Melbourne",22,"Mechanical Engineering","MEng","机械工程","https://study.unimelb.edu.au/find/courses/graduate/master-of-mechanical-engineering/",[{name:"Mechanical Systems",courses:["Mechanical Systems Design","Dynamics","Control"]},{name:"Energy",courses:["Thermofluids","Energy Systems","Heat Transfer"]}]),region:"澳大利亚"},
+  {...relatedProgram("sydney-me","University of Sydney",28,"Professional Engineering (Mechanical)","MPE","机械工程","https://www.sydney.edu.au/courses/courses/pc/master-of-professional-engineering-mechanical.html",[{name:"Mechanical Engineering",courses:["Advanced Mechanics","Mechanical Design","Engineering Management"]},{name:"Thermofluids",courses:["Fluid Mechanics","Heat Transfer","Energy"]}]),region:"澳大利亚"},
+  {...relatedProgram("anu-me","Australian National University",29,"Mechatronics","MEng","机电/系统","https://programsandcourses.anu.edu.au/program/MENGI",[{name:"Mechatronics",courses:["Mechatronic Systems","Control","Robotics"]}]),region:"澳大利亚"},
+  {...relatedProgram("monash-me","Monash University",31,"Professional Engineering (Mechanical)","MPE","机械工程","https://www.monash.edu/study/courses/find-a-course/professional-engineering-e6011",[{name:"Mechanical Engineering",courses:["Advanced Mechanics","Design","Manufacturing"]},{name:"Energy",courses:["Thermofluids","Sustainable Energy","Heat Transfer"]}]),region:"澳大利亚"},
+  {...relatedProgram("uq-me","University of Queensland",40,"Engineering Science (Mechanical)","MEngSc","机械工程","https://study.uq.edu.au/study-options/programs/master-engineering-science-5528",[{name:"Mechanical Engineering",courses:["Advanced Engineering Analysis","Mechanical Design","Control"]},{name:"Energy",courses:["Thermofluids","Energy Systems","Sustainability"]}]),region:"澳大利亚"},
+  {...relatedProgram("uwa-me","University of Western Australia",77,"Professional Engineering (Mechanical)","MPE","机械工程","https://www.uwa.edu.au/study/courses/master-of-professional-engineering",[{name:"Mechanical Engineering",courses:["Mechanical Design","Dynamics","Thermofluids"]}]),region:"澳大利亚"},
+  {...relatedProgram("adelaide-me","Adelaide University",82,"Mechanical Engineering","MEng","机械工程","https://adelaideuni.edu.au/study/degrees/master-of-engineering-mechanical/",[{name:"Mechanical Systems",courses:["Advanced Mechanics","Engineering Design","Control"]},{name:"Energy & Manufacturing",courses:["Thermofluids","Manufacturing","Materials"]}]),region:"澳大利亚"}
+];
+
+const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS, ...REGIONAL_PROGRAMS, ...EXPANDED_PROGRAMS].sort((a,b)=>a.rank-b.rank || a.school.localeCompare(b.school));
 const PROGRAM_BY_ID = new Map(ALL_PROGRAMS.map(program=>[program.id,program]));
 
 const dateLabel = (date: string) => date === "待公布" ? date : new Date(`${date}T00:00:00`).toLocaleDateString("zh-CN", {year:"numeric",month:"short",day:"numeric"});
@@ -182,16 +224,18 @@ const LOCATION_BY_SCHOOL: Record<string,string> = {
   "Virginia Polytechnic Institute and State University":"Blacksburg, Virginia",
   "The University of Hong Kong":"Hong Kong", "The Chinese University of Hong Kong":"Hong Kong",
   "The Hong Kong University of Science and Technology":"Hong Kong", "University of Toronto":"Toronto, Ontario",
-  "University of British Columbia":"Vancouver, British Columbia", "McGill University":"Montreal, Quebec"
+  "University of British Columbia":"Vancouver, British Columbia", "McGill University":"Montreal, Quebec", "University of Waterloo":"Waterloo, Ontario",
+  "Imperial College London":"London, England", "University of Oxford":"Oxford, England", "University of Cambridge":"Cambridge, England", "University College London":"London, England", "University of Edinburgh":"Edinburgh, Scotland", "King's College London":"London, England", "University of Manchester":"Manchester, England", "University of Bristol":"Bristol, England", "London School of Economics and Political Science":"London, England", "University of Warwick":"Coventry, England", "University of Birmingham":"Birmingham, England", "University of Glasgow":"Glasgow, Scotland", "University of Leeds":"Leeds, England", "University of Sheffield":"Sheffield, England", "Durham University":"Durham, England", "University of Nottingham":"Nottingham, England",
+  "Adelaide University":"Adelaide, South Australia", "Australian National University":"Canberra, ACT", "University of Melbourne":"Melbourne, Victoria", "Monash University":"Melbourne, Victoria", "University of New South Wales":"Sydney, New South Wales", "University of Queensland":"Brisbane, Queensland", "University of Sydney":"Sydney, New South Wales", "University of Western Australia":"Perth, Western Australia"
 };
-const APP_FEE_BY_REGION: Record<string,string> = {美国:"US$75–150",香港:"HK$300–600",加拿大:"C$125–170"};
+const APP_FEE_BY_REGION: Record<string,string> = {美国:"US$75–150",香港:"HK$300–600",加拿大:"C$125–170",英国:"£0–100",澳大利亚:"A$0–150"};
 const deadlineInfo = (deadline:string) => {
   if (deadline === "待公布") return {label:"待公布",days:null,tone:"unknown"};
   const days = Math.ceil((new Date(`${deadline}T23:59:59`).getTime()-Date.now())/86400000);
   if (days < 0) return {label:"Closed",days,tone:"expired"};
   return {label:`${days} Days Left`,days,tone:days>60?"safe":days>=30?"watch":days>=15?"soon":"urgent"};
 };
-const programLocation = (program:Program) => LOCATION_BY_SCHOOL[program.school] || (program.region==="香港"?"Hong Kong":program.region==="加拿大"?"Canada":"United States");
+const programLocation = (program:Program) => LOCATION_BY_SCHOOL[program.school] || (program.region==="香港"?"Hong Kong":program.region==="加拿大"?"Canada":program.region==="英国"?"United Kingdom":program.region==="澳大利亚"?"Australia":"United States");
 const programRegion = (program:Program) => program.region || "美国";
 const schoolDomain = (program:Program) => {try{return new URL(program.source).hostname.replace(/^www\./,"")}catch{return ""}};
 const schoolIconUrl = (program:Program) => `https://www.google.com/s2/favicons?domain_url=https://${schoolDomain(program)}&sz=128`;
@@ -205,8 +249,10 @@ const answerSchoolQuestion = (question:string,contextId?:string) => {
   const program=explicitProgram||(contextId?PROGRAM_BY_ID.get(contextId):undefined);
   if(!program){
     if(q.includes("机器人")||q.includes("robot")){const schools=ALL_PROGRAMS.filter(p=>p.tracks.some(t=>`${t.name}${t.courses.join("")}`.toLowerCase().includes("robot"))).slice(0,6);return {text:`机器人相关项目可以先看：${schools.map(p=>SCHOOL_NAMES[p.school]||p.school).join("、")}。你可以继续问我其中一所的截止日期、费用或课程。`};}
-    if(q.includes("香港"))return {text:"香港区目前收录香港大学、香港中文大学和香港科技大学。你可以直接问，例如“香港科技大学有哪些方向？”"};
-    if(q.includes("加拿大"))return {text:"加拿大区目前收录多伦多大学、英属哥伦比亚大学和麦吉尔大学。告诉我学校名称，我可以查询费用、课程和申请要求。"};
+    if(q.includes("香港"))return {text:"香港区已收录港八；其中没有对应机械工程硕士的学校会明确标注“暂无匹配项目”。"};
+    if(q.includes("加拿大"))return {text:"加拿大区已收录多伦多大学、英属哥伦比亚大学、麦吉尔大学和滑铁卢大学。"};
+    if(q.includes("英国"))return {text:"英国区按 QS 2027 世界前 100 范围整理，并明确标注没有匹配机械工程硕士的学校。"};
+    if(q.includes("澳洲")||q.includes("澳大利亚"))return {text:"澳大利亚区已收录当前 Group of Eight 的八所成员大学。"};
     return {text:"我可以查询网站内学校的截止日期、推荐信、GRE、学费、生活费、方向、课程、位置和官网。请带上学校名称，例如：“康奈尔大学学费是多少？”"};
   }
   const name=SCHOOL_NAMES[program.school]||program.school;
@@ -221,12 +267,14 @@ const answerSchoolQuestion = (question:string,contextId?:string) => {
   return {text:`${name} 提供 ${program.degree} in ${program.program}，综合排名记录为 #${program.rank}，位于 ${programLocation(program)}。你还可以继续问“学费呢？”或“课程呢？”。`,...linked};
 };
 
+const kunify = (text:string) => text.replace(/[鸡机几计级及记际基积激击极急集迹绩季寄忌纪己挤济继技籍即吉辑疾肌饥]/g,"坤");
+
 export default function Home() {
   const [view,setView] = useState<View>("dashboard");
   const [tab,setTab] = useState<"library"|"targets">("library");
   const [query,setQuery] = useState("");
   const [degree,setDegree] = useState("全部");
-  const [region,setRegion] = useState<"美国"|"香港"|"加拿大">("美国");
+  const [region,setRegion] = useState<"美国"|"香港"|"加拿大"|"英国"|"澳大利亚">("美国");
   const [status,setStatus] = useState<"全部"|"已核实"|"待复核">("全部");
   const [targets,setTargets] = useState<string[]>([]);
   const [selected,setSelected] = useState<Program | null>(null);
@@ -277,7 +325,7 @@ export default function Home() {
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
   const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
   const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,8),[]);
-  const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const answer=answerSchoolQuestion(question,assistantSchool);if("programId" in answer&&answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:answer.text,source:"source" in answer?answer.source:undefined}]);setAssistantQuery("")};
+  const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const answer=answerSchoolQuestion(question,assistantSchool);if("programId" in answer&&answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:kunify(answer.text),source:"source" in answer?answer.source:undefined}]);setAssistantQuery("")};
   const askAssistant=()=>sendAssistantQuestion(assistantQuery);
   const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":"项目库";
 
@@ -315,7 +363,7 @@ export default function Home() {
       {status!=="全部" && <div className={`filter-notice ${status==="已核实"?"is-verified":"is-pending"}`}>正在显示：{status==="已核实"?"已核实项目":"待官方更新项目"}（{list.length}）<button onClick={()=>setStatus("全部")}>显示全部</button></div>}
 
       <div className="toolbar">
-        <div className="region-tabs" aria-label="地区筛选">{(["美国","香港","加拿大"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{r}</button>)}</div>
+        <div className="region-tabs" aria-label="地区筛选">{(["美国","香港","加拿大","英国","澳大利亚"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{r}</button>)}</div>
         <select value={degree} onChange={e=>setDegree(e.target.value)}><option>全部</option><option>MS</option><option>MSc</option><option>MSc(Eng)</option><option>SM</option><option>ScM</option><option>MSE</option><option>MEng</option><option>MMechE</option></select>
         <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value as Category|"全部")}><option value="全部">全部分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>
         <select value={rankMax} onChange={e=>setRankMax(e.target.value)}><option value="全部">全部排名</option><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option></select>
@@ -352,7 +400,7 @@ export default function Home() {
         <p className="kicker">PROGRAM PROFILE · #{selected.rank}</p>
         <h2>{SCHOOL_NAMES[selected.school] || selected.school}</h2><h3>{selected.school} · {selected.degree} in {selected.program}</h3>
         <div className="detail-actions"><button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?"从目标中移除":"＋ 添加到我的目标"}</button><select className={`category-select ${categories[selected.id]||""}`} value={categories[selected.id]||""} onChange={e=>setCategory(selected.id,e.target.value)}><option value="">设置分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></div>
-        <section className="detail-overview"><div><span>院系</span><b>{selected.program}</b></div><div><span>学位</span><b>{selected.degree}</b></div><div><span>位置</span><b>{programLocation(selected)}</b></div><div><span>US News</span><b>#{selected.rank}</b></div><div><span>QS 排名</span><b>Not Available</b></div><div><span>机械工程排名</span><b>Not Available</b></div></section>
+        <section className="detail-overview"><div><span>院系</span><b>{selected.program}</b></div><div><span>学位</span><b>{selected.degree}</b></div><div><span>位置</span><b>{programLocation(selected)}</b></div><div><span>{programRegion(selected)==="英国"||programRegion(selected)==="澳大利亚"?"QS 2027":"分区参考排名"}</span><b>#{selected.rank}</b></div><div><span>数据状态</span><b>{selected.verified}</b></div><div><span>机械工程排名</span><b>Not Available</b></div></section>
         <div className={`detail-deadline ${deadlineInfo(selected.deadline).tone}`}><div><span>APPLICATION DEADLINE</span><b>{dateLabel(selected.deadline)}</b></div><strong>{deadlineInfo(selected.deadline).label}</strong></div>
         <div className="facts">
           <div><span>截止日期</span><b>{dateLabel(selected.deadline)}</b></div><div><span>推荐信</span><b>{selected.letters}</b></div>
@@ -378,7 +426,7 @@ export default function Home() {
         <section className="notes-section"><p className="kicker">PRIVATE NOTES · AUTO SAVED</p><h4>私人笔记</h4><textarea value={notes[selected.id]||""} onChange={e=>setNotes(old=>({...old,[selected.id]:e.target.value}))} placeholder="记录教授、研究方向、就业、天气、安全或个人想法…" /><span>仅保存在当前浏览器</span></section>
         <div className="official-links"><a className="source source-button" href={selected.source} target="_blank" rel="noreferrer">Department Website ↗</a><a className="source secondary-link" href={selected.source} target="_blank" rel="noreferrer">Official Website ↗</a><a className="source secondary-link" href={selected.source} target="_blank" rel="noreferrer">Application Portal ↗</a></div>
         <p className="last-updated">Last Updated · July 17, 2026</p>
-        <p className="source-note">第一批完整整理范围为美国综合排名前 20 中已收录项目、香港 3 所及加拿大 3 所。课程名称与开课安排可能按学期调整，请以按钮链接进入的官方页面为最终依据。</p>
+        <p className="source-note">当前范围包括美国项目、香港八所 UGC 资助大学、加拿大四校、英国 QS 2027 世界前 100 院校及澳大利亚 Group of Eight。无对应机械工程硕士的学校明确标记为“暂无匹配项目”；课程与要求请以官方页面为最终依据。</p>
       </section>
     </div>}
 
