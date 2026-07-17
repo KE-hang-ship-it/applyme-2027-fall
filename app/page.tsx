@@ -194,7 +194,7 @@ export default function Home() {
         <button className={tab==="library"?"active":""} onClick={()=>setTab("library")}>项目库 <small>{ALL_PROGRAMS.length}</small></button>
         <button className={tab==="targets"?"active":""} onClick={()=>setTab("targets")}>我的目标 <small>{targets.length}</small></button>
       </nav>
-      <div className="side-note"><b>2027 FALL</b><p>美国、香港及加拿大机械工程硕士申请</p><span>数据保存在当前浏览器</span></div>
+      <div className="side-note"><b>2027 FALL</b><p>机械工程硕士申请</p><span>数据保存在当前浏览器</span></div>
     </aside>
 
     <section className="page">
