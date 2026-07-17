@@ -165,7 +165,38 @@ const courseDescription = (course:string) => {
   return "该课程属于本方向的研究生课程模块，具体教学内容、学分、先修要求和开课学期请通过项目官网课程目录确认。";
 };
 
+type Category = "Favorite"|"Dream"|"Target"|"Safety"|"Priority";
+type TrackerStatus = "Not Started"|"In Progress"|"Completed";
+type View = "dashboard"|"schools"|"favorites"|"tracker";
+const CHECKLIST = ["Resume","CV","Statement of Purpose","Personal Statement","Recommendation Letters","Transcript","English Test","GRE","Application Fee","Application Submitted","Interview","Decision","Deposit","Visa"];
+const CATEGORY_LABELS: Record<Category,string> = {Favorite:"收藏",Dream:"梦校",Target:"目标",Safety:"保底",Priority:"优先"};
+const LOCATION_BY_SCHOOL: Record<string,string> = {
+  "Stanford University":"Stanford, California", "Massachusetts Institute of Technology":"Cambridge, Massachusetts",
+  "Princeton University":"Princeton, New Jersey", "Cornell University":"Ithaca, New York",
+  "Columbia University":"New York, New York", "University of Pennsylvania":"Philadelphia, Pennsylvania",
+  "Northwestern University":"Evanston, Illinois", "Johns Hopkins University":"Baltimore, Maryland",
+  "Duke University":"Durham, North Carolina", "Rice University":"Houston, Texas",
+  "University of Michigan–Ann Arbor":"Ann Arbor, Michigan", "Carnegie Mellon University":"Pittsburgh, Pennsylvania",
+  "University of Southern California":"Los Angeles, California", "University of California, Los Angeles":"Los Angeles, California",
+  "University of California, Berkeley":"Berkeley, California", "University of Texas at Austin":"Austin, Texas",
+  "Georgia Institute of Technology":"Atlanta, Georgia", "New York University":"New York, New York",
+  "Virginia Polytechnic Institute and State University":"Blacksburg, Virginia",
+  "The University of Hong Kong":"Hong Kong", "The Chinese University of Hong Kong":"Hong Kong",
+  "The Hong Kong University of Science and Technology":"Hong Kong", "University of Toronto":"Toronto, Ontario",
+  "University of British Columbia":"Vancouver, British Columbia", "McGill University":"Montreal, Quebec"
+};
+const APP_FEE_BY_REGION: Record<string,string> = {美国:"US$75–150",香港:"HK$300–600",加拿大:"C$125–170"};
+const deadlineInfo = (deadline:string) => {
+  if (deadline === "待公布") return {label:"待公布",days:null,tone:"unknown"};
+  const days = Math.ceil((new Date(`${deadline}T23:59:59`).getTime()-Date.now())/86400000);
+  if (days < 0) return {label:"Closed",days,tone:"expired"};
+  return {label:`${days} Days Left`,days,tone:days>60?"safe":days>=30?"watch":days>=15?"soon":"urgent"};
+};
+const programLocation = (program:Program) => LOCATION_BY_SCHOOL[program.school] || (program.region==="香港"?"Hong Kong":program.region==="加拿大"?"Canada":"United States");
+const programRegion = (program:Program) => program.region || "美国";
+
 export default function Home() {
+  const [view,setView] = useState<View>("dashboard");
   const [tab,setTab] = useState<"library"|"targets">("library");
   const [query,setQuery] = useState("");
   const [degree,setDegree] = useState("全部");
@@ -175,93 +206,142 @@ export default function Home() {
   const [selected,setSelected] = useState<Program | null>(null);
   const [selectedCourse,setSelectedCourse] = useState<{course:string;track:string;program:Program}|null>(null);
   const [compare,setCompare] = useState<string[]>([]);
+  const [compareOpen,setCompareOpen] = useState(false);
   const [ready,setReady] = useState(false);
+  const [dark,setDark] = useState(false);
+  const [filtersOpen,setFiltersOpen] = useState(false);
+  const [categoryFilter,setCategoryFilter] = useState<Category|"全部">("全部");
+  const [categories,setCategories] = useState<Record<string,Category>>({});
+  const [notes,setNotes] = useState<Record<string,string>>({});
+  const [trackers,setTrackers] = useState<Record<string,Record<string,TrackerStatus>>>({});
+  const [featureFilters,setFeatureFilters] = useState<string[]>([]);
+  const [rankMax,setRankMax] = useState("全部");
+  const [deadlineWindow,setDeadlineWindow] = useState("全部");
 
   useEffect(() => {
     const saved = localStorage.getItem("me-targets");
     if (saved) setTargets(JSON.parse(saved));
+    const savedCategories=localStorage.getItem("me-categories"); if(savedCategories)setCategories(JSON.parse(savedCategories));
+    const savedNotes=localStorage.getItem("me-notes"); if(savedNotes)setNotes(JSON.parse(savedNotes));
+    const savedTrackers=localStorage.getItem("me-trackers"); if(savedTrackers)setTrackers(JSON.parse(savedTrackers));
+    const savedTheme=localStorage.getItem("me-theme"); setDark(savedTheme?savedTheme==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches);
     setReady(true);
   },[]);
   useEffect(() => { if (ready) localStorage.setItem("me-targets",JSON.stringify(targets)); },[targets,ready]);
+  useEffect(()=>{if(ready)localStorage.setItem("me-categories",JSON.stringify(categories))},[categories,ready]);
+  useEffect(()=>{if(ready)localStorage.setItem("me-notes",JSON.stringify(notes))},[notes,ready]);
+  useEffect(()=>{if(ready)localStorage.setItem("me-trackers",JSON.stringify(trackers))},[trackers,ready]);
+  useEffect(()=>{if(ready){localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"}},[dark,ready]);
 
   const list = useMemo(() => ALL_PROGRAMS.filter(p =>
     (tab === "library" || targets.includes(p.id)) &&
     (tab === "targets" || (p.region || "美国") === region) &&
     (degree === "全部" || p.degree === degree) &&
     (status === "全部" || p.verified === status) &&
-    `${p.school}${SCHOOL_NAMES[p.school] || ""}${p.program}${p.degree}${p.field}`.toLowerCase().includes(query.toLowerCase())
-  ),[tab,targets,degree,status,region,query]);
+    (rankMax === "全部" || p.rank <= Number(rankMax)) &&
+    (deadlineWindow === "全部" || (deadlineInfo(p.deadline).days !== null && deadlineInfo(p.deadline).days! >= 0 && deadlineInfo(p.deadline).days! <= Number(deadlineWindow))) &&
+    (categoryFilter === "全部" || categories[p.id] === categoryFilter) &&
+    featureFilters.every(feature=>`${p.field} ${p.program} ${p.tracks.map(t=>`${t.name} ${t.courses.join(" ")}`).join(" ")}`.toLowerCase().includes(feature.toLowerCase().replace(/s$/,""))) &&
+    `${p.school}${SCHOOL_NAMES[p.school] || ""}${p.program}${p.degree}${p.field}${programLocation(p)}`.toLowerCase().includes(query.toLowerCase())
+  ),[tab,targets,degree,status,region,query,categoryFilter,categories,featureFilters,rankMax,deadlineWindow]);
 
   const toggleTarget = (id:string) => setTargets(old => old.includes(id) ? old.filter(x=>x!==id) : [...old,id]);
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
+  const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
+  const setTracker=(id:string,item:string,value:TrackerStatus)=>setTrackers(old=>({...old,[id]:{...(old[id]||{}),[item]:value}}));
+  const progressFor=(id:string)=>Math.round(CHECKLIST.filter(item=>trackers[id]?.[item]==="Completed").length/CHECKLIST.length*100);
+  const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,8),[]);
+  const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":view==="tracker"?"申请进度":"项目库";
 
-  return <main>
+  return <main className="app-shell">
     <aside>
       <div className="logo"><b>APPLY</b><span>ME</span></div>
-      <nav>
-        <button className={tab==="library"?"active":""} onClick={()=>setTab("library")}>项目库 <small>{ALL_PROGRAMS.length}</small></button>
-        <button className={tab==="targets"?"active":""} onClick={()=>setTab("targets")}>我的目标 <small>{targets.length}</small></button>
+      <nav className="primary-nav">
+        <button className={view==="dashboard"?"active":""} onClick={()=>setView("dashboard")}><span>⌂</span> Dashboard</button>
+        <button className={view==="schools"?"active":""} onClick={()=>{setView("schools");setTab("library")}}><span>◇</span> 项目库 <small>{ALL_PROGRAMS.length}</small></button>
+        <button className={view==="favorites"?"active":""} onClick={()=>setView("favorites")}><span>☆</span> 收藏分类 <small>{Object.keys(categories).length}</small></button>
+        <button className={view==="tracker"?"active":""} onClick={()=>setView("tracker")}><span>✓</span> 申请进度</button>
       </nav>
+      <button className="theme-toggle" onClick={()=>setDark(v=>!v)} aria-label="切换深色模式"><span>{dark?"☀":"◐"}</span>{dark?"浅色模式":"深色模式"}</button>
       <div className="side-note"><b>2027 FALL</b><p>机械工程硕士申请</p><span>数据保存在当前浏览器</span></div>
     </aside>
 
     <section className="page">
       <header>
-        <div><p>MASTER'S APPLICATION DATABASE</p><h1>{tab==="library"?"项目库":"我的目标项目"}</h1></div>
-        <div className="season">申请季 <b>2027 Fall</b></div>
+        <div><p>MASTER'S APPLICATION WORKSPACE</p><h1>{title}</h1></div>
+        <div className="header-actions"><label className="global-search"><span>⌕</span><input value={query} onFocus={()=>setView("schools")} onChange={e=>{setQuery(e.target.value);setView("schools")}} placeholder="搜索学校、专业、城市或州" /></label><div className="season">申请季 <b>2027 Fall</b></div></div>
       </header>
 
-      <section className="summary">
-        <div><span>收录项目</span><b>{ALL_PROGRAMS.length}</b></div>
-        <div><span>目标项目</span><b>{targets.length}</b></div>
-        <button className={`status-card verified-card ${status==="已核实"?"active":""}`} onClick={()=>setStatus(status==="已核实"?"全部":"已核实")} aria-pressed={status==="已核实"}><span>已核实 · 点击筛选</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="已核实").length}</b></button>
-        <button className={`status-card pending-card ${status==="待复核"?"active":""}`} onClick={()=>setStatus(status==="待复核"?"全部":"待复核")} aria-pressed={status==="待复核"}><span>待官方更新 · 点击筛选</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="待复核").length}</b></button>
+      {view==="dashboard" && <section className="dashboard-view">
+        <div className="dashboard-heading"><div><span className="eyebrow">UPCOMING DEADLINES</span><h2>即将截止</h2></div><button onClick={()=>setView("schools")}>查看全部项目 →</button></div>
+        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><div className="deadline-logo">{(SCHOOL_NAMES[p.school]||p.school).slice(0,1)}</div><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>暂无已公布的临近截止日期</b><span>项目公布 2027 Fall 截止日期后会自动按剩余天数排序。</span></div>}</div>
+      </section>}
+
+      {(view==="schools"||view==="favorites") && <>
+      <section className="summary compact-summary">
+        <button onClick={()=>{setTab("library");setCategoryFilter("全部")}}><span>收录项目</span><b>{ALL_PROGRAMS.length}</b></button>
+        <button onClick={()=>setTab("targets")}><span>我的目标</span><b>{targets.length}</b></button>
+        <button className={`status-card verified-card ${status==="已核实"?"active":""}`} onClick={()=>setStatus(status==="已核实"?"全部":"已核实")}><span>已核实</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="已核实").length}</b></button>
+        <button className={`status-card pending-card ${status==="待复核"?"active":""}`} onClick={()=>setStatus(status==="待复核"?"全部":"待复核")}><span>待更新</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="待复核").length}</b></button>
       </section>
 
       {status!=="全部" && <div className={`filter-notice ${status==="已核实"?"is-verified":"is-pending"}`}>正在显示：{status==="已核实"?"已核实项目":"待官方更新项目"}（{list.length}）<button onClick={()=>setStatus("全部")}>显示全部</button></div>}
 
       <div className="toolbar">
         <div className="region-tabs" aria-label="地区筛选">{(["美国","香港","加拿大"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{r}</button>)}</div>
-        <label><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索学校、专业或方向" /></label>
         <select value={degree} onChange={e=>setDegree(e.target.value)}><option>全部</option><option>MS</option><option>MSc</option><option>MSc(Eng)</option><option>SM</option><option>ScM</option><option>MSE</option><option>MEng</option><option>MMechE</option></select>
+        <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value as Category|"全部")}><option value="全部">全部分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>
+        <select value={rankMax} onChange={e=>setRankMax(e.target.value)}><option value="全部">全部排名</option><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option></select>
+        <select value={deadlineWindow} onChange={e=>setDeadlineWindow(e.target.value)}><option value="全部">全部截止时间</option><option value="30">30 天内</option><option value="60">60 天内</option><option value="90">90 天内</option></select>
+        <button className={`filter-button ${filtersOpen?"active":""}`} onClick={()=>setFiltersOpen(v=>!v)}>筛选 {featureFilters.length?`· ${featureFilters.length}`:""}</button>
       </div>
+      {filtersOpen&&<div className="filter-panel"><span>研究方向</span>{["Robotics","Controls","Thermal","Manufacturing","Materials","Artificial Intelligence"].map(f=><button key={f} className={featureFilters.includes(f)?"active":""} onClick={()=>setFeatureFilters(old=>old.includes(f)?old.filter(x=>x!==f):[...old,f])}>{f}</button>)}<button className="clear-filter" onClick={()=>setFeatureFilters([])}>清除</button></div>}
 
       <section className="table-card">
-        <div className="thead"><span>学校 / 项目</span><span>学位</span><span>申请截止</span><span>推荐信</span><span>材料</span><span>状态</span><span /></div>
+        <div className="thead"><span>学校 / 项目</span><span>学位</span><span>截止日期</span><span>倒计时</span><span>分类</span><span>状态</span><span /></div>
         {list.map(p=><article className={`row ${p.verified==="已核实"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)}>
           <div className="school"><i>{p.rank}</i><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school} · {p.program} · {p.field}</span></div></div>
           <strong className="degree">{p.degree}</strong>
           <span>{dateLabel(p.deadline)}</span>
-          <span>{p.letters}</span>
-          <span className="materials">CV · SOP</span>
+          <span className={`countdown ${deadlineInfo(p.deadline).tone}`}>{deadlineInfo(p.deadline).label}</span>
+          <select className={`category-select ${categories[p.id]||""}`} value={categories[p.id]||""} onClick={e=>e.stopPropagation()} onChange={e=>setCategory(p.id,e.target.value)}><option value="">未分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>
           <span className={p.verified==="已核实"?"verified":"pending"}>{p.verified}</span>
           <div className="actions">
-            <button className={compare.includes(p.id)?"selected":""} onClick={e=>{e.stopPropagation();toggleCompare(p.id)}} title="加入对比">⇄</button>
+            <button className={compare.includes(p.id)?"selected":""} onClick={e=>{e.stopPropagation();toggleCompare(p.id)}} title="加入对比">Compare</button>
             <button className={targets.includes(p.id)?"saved":""} onClick={e=>{e.stopPropagation();toggleTarget(p.id)}} title="添加或移除目标">{targets.includes(p.id)?"−":"＋"}</button>
           </div>
         </article>)}
         {!list.length && <div className="empty">{tab==="targets"?"还没有目标项目，请从项目库点击“＋”添加。":"没有找到项目。"}</div>}
       </section>
-      <p className="disclaimer">院校范围参考 2026 US News 美本综合排名前 50；仅展示机械、机器人、制造或航天相关 MS/MEng 类项目，没有匹配项目的学校不列入项目表。申请要求以项目官网为准，未确认内容标记为“待复核”。</p>
+      <p className="disclaimer">申请要求与费用以项目官网为准；未确认内容标记为“待复核”。个人分类、笔记与进度仅保存在当前浏览器。</p>
+      </>}
+
+      {view==="tracker"&&<section className="tracker-list">{targets.length?targets.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;const progress=progressFor(id);return <button key={id} onClick={()=>setSelected(p)} className="tracker-card"><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><div className="progress-meta"><span>{progress}%</span><i><em style={{width:`${progress}%`}} /></i></div></button>}):<div className="premium-empty"><b>还没有申请目标</b><span>在项目库中点击“＋”添加学校后，即可开始管理申请清单。</span><button onClick={()=>setView("schools")}>浏览项目</button></div>}</section>}
     </section>
 
     {selected && <div className="overlay" onClick={()=>setSelected(null)}>
       <section className="drawer" onClick={e=>e.stopPropagation()}>
         <button className="close" onClick={()=>setSelected(null)}>×</button>
+        <div className="school-banner"><div className="school-mark">{(SCHOOL_NAMES[selected.school]||selected.school).slice(0,1)}</div><span>{programLocation(selected)}</span></div>
         <p className="kicker">PROGRAM PROFILE · #{selected.rank}</p>
         <h2>{SCHOOL_NAMES[selected.school] || selected.school}</h2><h3>{selected.school} · {selected.degree} in {selected.program}</h3>
-        <button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?"从目标中移除":"＋ 添加到我的目标"}</button>
+        <div className="detail-actions"><button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?"从目标中移除":"＋ 添加到我的目标"}</button><select className={`category-select ${categories[selected.id]||""}`} value={categories[selected.id]||""} onChange={e=>setCategory(selected.id,e.target.value)}><option value="">设置分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></div>
+        <section className="detail-overview"><div><span>院系</span><b>{selected.program}</b></div><div><span>学位</span><b>{selected.degree}</b></div><div><span>位置</span><b>{programLocation(selected)}</b></div><div><span>US News</span><b>#{selected.rank}</b></div><div><span>QS 排名</span><b>Not Available</b></div><div><span>机械工程排名</span><b>Not Available</b></div></section>
+        <div className={`detail-deadline ${deadlineInfo(selected.deadline).tone}`}><div><span>APPLICATION DEADLINE</span><b>{dateLabel(selected.deadline)}</b></div><strong>{deadlineInfo(selected.deadline).label}</strong></div>
         <div className="facts">
           <div><span>截止日期</span><b>{dateLabel(selected.deadline)}</b></div><div><span>推荐信</span><b>{selected.letters}</b></div>
           <div><span>CV / Resume</span><b>{selected.cv}</b></div><div><span>SOP / PS</span><b>{selected.sop}</b></div>
           <div><span>GRE</span><b>{selected.gre}</b></div><div><span>学分 / 时长</span><b>{selected.credits} · {selected.duration}</b></div>
         </div>
         <section className="costs">
-          <p className="kicker">TUITION & HOUSING PLAN</p><h4>学费与租房预算</h4>
+          <p className="kicker">COST INFORMATION</p><h4>费用估算</h4>
           <div className="cost-grid">
-            <div><span>项目学费规划值</span><b>{costFor(selected.school).tuition}</b></div>
-            <div><span>合租单间预算</span><b>{costFor(selected.school).shared}</b></div>
-            <div><span>整租一居 / Studio</span><b>{costFor(selected.school).privateRoom}</b></div>
+            <div><span>申请费</span><b>{APP_FEE_BY_REGION[programRegion(selected)]||"Not Available"}</b></div>
+            <div><span>项目学费</span><b>{costFor(selected.school).tuition}</b></div>
+            <div><span>生活费 / 合租</span><b>{costFor(selected.school).shared}</b></div>
+            <div><span>保险</span><b>Not Available</b></div>
+            <div><span>独居预算</span><b>{costFor(selected.school).privateRoom}</b></div>
+            <div><span>预计总成本</span><b>Not Available</b></div>
           </div>
           <p className="housing-note"><b>常见租房要求：</b>{costFor(selected.school).note}</p>
           <p className="budget-warning">费用为选校规划区间，不是学校报价；不同学分、学制、校区和房源会改变总成本，请在申请和签约前通过官网复核。</p>
@@ -269,7 +349,10 @@ export default function Home() {
         <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>官网方向与课程整理</h4>
           {selected.tracks.map(t=><div className="track" key={t.name}><b>{t.name}</b><ul>{t.courses.map(c=><li key={c}><button onClick={()=>setSelectedCourse({course:c,track:t.name,program:selected})}>{c}<span>查看介绍</span></button></li>)}</ul></div>)}
         </div>
-        <a className="source source-button" href={selected.source} target="_blank" rel="noreferrer">直接进入机械硕士官方网站 ↗</a>
+        <section className="notes-section"><p className="kicker">PRIVATE NOTES · AUTO SAVED</p><h4>私人笔记</h4><textarea value={notes[selected.id]||""} onChange={e=>setNotes(old=>({...old,[selected.id]:e.target.value}))} placeholder="记录教授、研究方向、就业、天气、安全或个人想法…" /><span>仅保存在当前浏览器</span></section>
+        <section className="checklist-section"><div className="section-title"><div><p className="kicker">APPLICATION TRACKER</p><h4>申请清单</h4></div><b>{progressFor(selected.id)}%</b></div><div className="progress-line"><i style={{width:`${progressFor(selected.id)}%`}} /></div><div className="checklist-grid">{CHECKLIST.map(item=><label key={item}><span>{item}</span><select value={trackers[selected.id]?.[item]||"Not Started"} onChange={e=>setTracker(selected.id,item,e.target.value as TrackerStatus)}><option>Not Started</option><option>In Progress</option><option>Completed</option></select></label>)}</div></section>
+        <div className="official-links"><a className="source source-button" href={selected.source} target="_blank" rel="noreferrer">Department Website ↗</a><a className="source secondary-link" href={selected.source} target="_blank" rel="noreferrer">Official Website ↗</a><a className="source secondary-link" href={selected.source} target="_blank" rel="noreferrer">Application Portal ↗</a></div>
+        <p className="last-updated">Last Updated · July 17, 2026</p>
         <p className="source-note">第一批完整整理范围为美国综合排名前 20 中已收录项目、香港 3 所及加拿大 3 所。课程名称与开课安排可能按学期调整，请以按钮链接进入的官方页面为最终依据。</p>
       </section>
     </div>}
@@ -287,6 +370,7 @@ export default function Home() {
       </section>
     </div>}
 
-    {!!compare.length && <div className="compare-bar"><span>已选择 {compare.length}/3 个项目</span>{compare.map(id=>{const program=PROGRAM_BY_ID.get(id);return <b key={id}>{program ? SCHOOL_NAMES[program.school] || program.school.split(" ")[0] : id} <button onClick={()=>toggleCompare(id)}>×</button></b>})}<button className="compare-now" onClick={()=>setSelected(PROGRAM_BY_ID.get(compare[0])||null)}>查看对比</button></div>}
+    {compareOpen&&<div className="compare-overlay" onClick={()=>setCompareOpen(false)}><section className="compare-modal" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCompareOpen(false)}>×</button><p className="kicker">SCHOOL COMPARISON</p><h2>学校对比</h2><div className="compare-table"><div className="compare-labels"><b>项目</b><span>综合排名</span><span>申请费</span><span>学费</span><span>生活费</span><span>截止日期</span><span>位置</span><span>研究优势</span><span>官网</span></div>{compare.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;return <div className="compare-column" key={id}><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>#{p.rank}</span><span>{APP_FEE_BY_REGION[programRegion(p)]}</span><span>{costFor(p.school).tuition}</span><span>{costFor(p.school).shared}</span><span>{dateLabel(p.deadline)}</span><span>{programLocation(p)}</span><span>{p.tracks.map(t=>t.name).join(" · ")}</span><a href={p.source} target="_blank" rel="noreferrer">官网 ↗</a></div>})}</div></section></div>}
+    {!!compare.length && <div className="compare-bar"><span>已选择 {compare.length}/3 个项目</span>{compare.map(id=>{const program=PROGRAM_BY_ID.get(id);return <b key={id}>{program ? SCHOOL_NAMES[program.school] || program.school.split(" ")[0] : id} <button onClick={()=>toggleCompare(id)}>×</button></b>})}<button className="compare-now" disabled={compare.length<2} onClick={()=>setCompareOpen(true)}>对比 {compare.length} 所学校</button></div>}
   </main>
 }
