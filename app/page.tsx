@@ -40,12 +40,19 @@ type CostProfile = { tuition:string; shared:string; privateRoom:string; note:str
 const HIGH_COST = new Set(["Stanford University","Massachusetts Institute of Technology","Harvard University","Columbia University","University of California, Berkeley","University of California, Los Angeles","University of Southern California","New York University","Boston University","Northeastern University"]);
 const LOWER_COST = new Set(["University of Michigan–Ann Arbor","University of Notre Dame","University of Florida","University of Illinois Urbana-Champaign","University of Wisconsin–Madison","Ohio State University","Purdue University","University of Georgia","University of Rochester"]);
 const PRIVATE_SCHOOLS = new Set(["Princeton University","Massachusetts Institute of Technology","Harvard University","Stanford University","University of Pennsylvania","California Institute of Technology","Cornell University","Brown University","Columbia University","Duke University","Johns Hopkins University","Northwestern University","Rice University","Vanderbilt University","Carnegie Mellon University","University of Notre Dame","Washington University in St. Louis","University of Southern California","New York University","Tufts University","Boston University","Lehigh University","Northeastern University","University of Rochester"]);
-const costFor = (school:string):CostProfile => ({
-  tuition: school.includes("Hong Kong") || school==="The University of Hong Kong" ? "约 HK$180,000–320,000/项目" : ["University of Toronto","University of British Columbia","McGill University"].includes(school) ? "约 C$25,000–70,000/学年（国际生）" : PRIVATE_SCHOOLS.has(school) ? "约 US$55,000–75,000/学年" : "约 US$30,000–60,000/学年（国际生）",
-  shared: school.includes("Hong Kong") || school==="The University of Hong Kong" ? "约 HK$5,500–10,000/月" : ["University of Toronto","University of British Columbia","McGill University"].includes(school) ? "约 C$900–1,800/月" : HIGH_COST.has(school) ? "约 US$1,000–1,800/月" : LOWER_COST.has(school) ? "约 US$600–1,000/月" : "约 US$750–1,300/月",
-  privateRoom: school.includes("Hong Kong") || school==="The University of Hong Kong" ? "约 HK$12,000–25,000/月" : ["University of Toronto","University of British Columbia","McGill University"].includes(school) ? "约 C$1,500–3,000/月" : HIGH_COST.has(school) ? "约 US$1,600–3,000/月" : LOWER_COST.has(school) ? "约 US$900–1,500/月" : "约 US$1,100–2,000/月",
-  note:"通常需护照/身份证明、I-20或录取证明、押金与首月房租；没有美国信用记录时，可能需要担保人或预付数月房租。"
-});
+const HONG_KONG_SCHOOLS = new Set(["The University of Hong Kong","The Chinese University of Hong Kong","The Hong Kong University of Science and Technology"]);
+const CANADIAN_SCHOOLS = new Set(["University of Toronto","University of British Columbia","McGill University"]);
+const RENTAL_NOTE = "通常需护照/身份证明、录取或在读证明、押金与首月房租；没有当地信用记录时，可能需要担保人或预付数月房租。";
+const costFor = (school:string):CostProfile => {
+  if (HONG_KONG_SCHOOLS.has(school)) return {tuition:"约 HK$180,000–320,000/项目",shared:"约 HK$5,500–10,000/月",privateRoom:"约 HK$12,000–25,000/月",note:RENTAL_NOTE};
+  if (CANADIAN_SCHOOLS.has(school)) return {tuition:"约 C$25,000–70,000/学年（国际生）",shared:"约 C$900–1,800/月",privateRoom:"约 C$1,500–3,000/月",note:RENTAL_NOTE};
+  return {
+    tuition:PRIVATE_SCHOOLS.has(school) ? "约 US$55,000–75,000/学年" : "约 US$30,000–60,000/学年（国际生）",
+    shared:HIGH_COST.has(school) ? "约 US$1,000–1,800/月" : LOWER_COST.has(school) ? "约 US$600–1,000/月" : "约 US$750–1,300/月",
+    privateRoom:HIGH_COST.has(school) ? "约 US$1,600–3,000/月" : LOWER_COST.has(school) ? "约 US$900–1,500/月" : "约 US$1,100–2,000/月",
+    note:RENTAL_NOTE
+  };
+};
 
 const PROGRAMS: Program[] = [
   { id:"stanford-me", school:"Stanford University", rank:4, program:"Mechanical Engineering", degree:"MS", field:"机械工程", deadline:"2026-12-01", letters:"3封", cv:"需要", sop:"需要", gre:"不接受", credits:"45 units", duration:"约2年", verified:"已核实", source:"https://me.stanford.edu/academics-admissions/graduate-programs/masters-program/masters-admissions", tracks:[
@@ -141,6 +148,7 @@ const REGIONAL_PROGRAMS: Program[] = [
 ];
 
 const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS, ...REGIONAL_PROGRAMS].sort((a,b)=>a.rank-b.rank || a.school.localeCompare(b.school));
+const PROGRAM_BY_ID = new Map(ALL_PROGRAMS.map(program=>[program.id,program]));
 
 const dateLabel = (date: string) => date === "待公布" ? date : new Date(`${date}T00:00:00`).toLocaleDateString("zh-CN", {year:"numeric",month:"short",day:"numeric"});
 const courseDescription = (course:string) => {
@@ -279,6 +287,6 @@ export default function Home() {
       </section>
     </div>}
 
-    {!!compare.length && <div className="compare-bar"><span>已选择 {compare.length}/3 个项目</span>{compare.map(id=><b key={id}>{SCHOOL_NAMES[ALL_PROGRAMS.find(p=>p.id===id)?.school || ""] || ALL_PROGRAMS.find(p=>p.id===id)?.school.split(" ")[0]} <button onClick={()=>toggleCompare(id)}>×</button></b>)}<button className="compare-now" onClick={()=>setSelected(ALL_PROGRAMS.find(p=>p.id===compare[0])||null)}>查看对比</button></div>}
+    {!!compare.length && <div className="compare-bar"><span>已选择 {compare.length}/3 个项目</span>{compare.map(id=>{const program=PROGRAM_BY_ID.get(id);return <b key={id}>{program ? SCHOOL_NAMES[program.school] || program.school.split(" ")[0] : id} <button onClick={()=>toggleCompare(id)}>×</button></b>})}<button className="compare-now" onClick={()=>setSelected(PROGRAM_BY_ID.get(compare[0])||null)}>查看对比</button></div>}
   </main>
 }
