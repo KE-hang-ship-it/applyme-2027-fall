@@ -31,6 +31,17 @@ const SCHOOL_NAMES: Record<string, string> = {
   "Purdue University":"普渡大学", "University of Georgia":"佐治亚大学", "University of Rochester":"罗切斯特大学"
 };
 
+type CostProfile = { tuition:string; shared:string; privateRoom:string; note:string };
+const HIGH_COST = new Set(["Stanford University","Massachusetts Institute of Technology","Harvard University","Columbia University","University of California, Berkeley","University of California, Los Angeles","University of Southern California","New York University","Boston University","Northeastern University"]);
+const LOWER_COST = new Set(["University of Michigan–Ann Arbor","University of Notre Dame","University of Florida","University of Illinois Urbana-Champaign","University of Wisconsin–Madison","Ohio State University","Purdue University","University of Georgia","University of Rochester"]);
+const PRIVATE_SCHOOLS = new Set(["Princeton University","Massachusetts Institute of Technology","Harvard University","Stanford University","University of Pennsylvania","California Institute of Technology","Cornell University","Brown University","Columbia University","Duke University","Johns Hopkins University","Northwestern University","Rice University","Vanderbilt University","Carnegie Mellon University","University of Notre Dame","Washington University in St. Louis","University of Southern California","New York University","Tufts University","Boston University","Lehigh University","Northeastern University","University of Rochester"]);
+const costFor = (school:string):CostProfile => ({
+  tuition: PRIVATE_SCHOOLS.has(school) ? "约 US$55,000–75,000/学年" : "约 US$30,000–60,000/学年（国际生）",
+  shared: HIGH_COST.has(school) ? "约 US$1,000–1,800/月" : LOWER_COST.has(school) ? "约 US$600–1,000/月" : "约 US$750–1,300/月",
+  privateRoom: HIGH_COST.has(school) ? "约 US$1,600–3,000/月" : LOWER_COST.has(school) ? "约 US$900–1,500/月" : "约 US$1,100–2,000/月",
+  note:"通常需护照/身份证明、I-20或录取证明、押金与首月房租；没有美国信用记录时，可能需要担保人或预付数月房租。"
+});
+
 const PROGRAMS: Program[] = [
   { id:"stanford-me", school:"Stanford University", rank:4, program:"Mechanical Engineering", degree:"MS", field:"机械工程", deadline:"2026-12-01", letters:"3封", cv:"需要", sop:"需要", gre:"不接受", credits:"45 units", duration:"约2年", verified:"已核实", source:"https://me.stanford.edu/academics-admissions/graduate-programs/masters-program/masters-admissions", tracks:[
     {name:"Controls & Robotics",courses:["Experimental Robotics","Introduction to Robotics","Decision Making under Uncertainty"]},
@@ -205,10 +216,20 @@ export default function Home() {
           <div><span>CV / Resume</span><b>{selected.cv}</b></div><div><span>SOP / PS</span><b>{selected.sop}</b></div>
           <div><span>GRE</span><b>{selected.gre}</b></div><div><span>学分 / 时长</span><b>{selected.credits} · {selected.duration}</b></div>
         </div>
+        <section className="costs">
+          <p className="kicker">TUITION & HOUSING PLAN</p><h4>学费与租房预算</h4>
+          <div className="cost-grid">
+            <div><span>项目学费规划值</span><b>{costFor(selected.school).tuition}</b></div>
+            <div><span>合租单间预算</span><b>{costFor(selected.school).shared}</b></div>
+            <div><span>整租一居 / Studio</span><b>{costFor(selected.school).privateRoom}</b></div>
+          </div>
+          <p className="housing-note"><b>常见租房要求：</b>{costFor(selected.school).note}</p>
+          <p className="budget-warning">费用为选校规划区间，不是学校报价；不同学分、学制、校区和房源会改变总成本，请在申请和签约前通过官网复核。</p>
+        </section>
         <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>方向与课程示例</h4>
           {selected.tracks.map(t=><div className="track" key={t.name}><b>{t.name}</b><ul>{t.courses.map(c=><li key={c}>{c}</li>)}</ul></div>)}
         </div>
-        <a className="source" href={selected.source} target="_blank" rel="noreferrer">查看项目官方页面 ↗</a>
+        <a className="source source-button" href={selected.source} target="_blank" rel="noreferrer">直接进入机械硕士官方网站 ↗</a>
         <p className="source-note">课程为培养方向示例，实际学期开课情况需在选课目录中再次确认。</p>
       </section>
     </div>}
