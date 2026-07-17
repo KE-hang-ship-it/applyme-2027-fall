@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type Program = {
   id: string; school: string; rank: number; program: string; degree: string;
+  region?: "美国"|"香港"|"加拿大";
   field: string; deadline: string; letters: string; cv: string; sop: string;
   gre: string; credits: string; duration: string; verified: "已核实" | "待复核";
   source: string; tracks: { name: string; courses: string[] }[];
@@ -28,7 +29,11 @@ const SCHOOL_NAMES: Record<string, string> = {
   "Ohio State University":"俄亥俄州立大学", "Boston University":"波士顿大学",
   "Rutgers University–New Brunswick":"罗格斯大学新布朗斯维克分校", "University of Maryland, College Park":"马里兰大学帕克分校",
   "University of Washington":"华盛顿大学", "Lehigh University":"理海大学", "Northeastern University":"东北大学",
-  "Purdue University":"普渡大学", "University of Georgia":"佐治亚大学", "University of Rochester":"罗切斯特大学"
+  "Purdue University":"普渡大学", "University of Georgia":"佐治亚大学", "University of Rochester":"罗切斯特大学",
+  "Virginia Polytechnic Institute and State University":"弗吉尼亚理工大学",
+  "The University of Hong Kong":"香港大学", "The Chinese University of Hong Kong":"香港中文大学",
+  "The Hong Kong University of Science and Technology":"香港科技大学",
+  "University of Toronto":"多伦多大学", "University of British Columbia":"英属哥伦比亚大学", "McGill University":"麦吉尔大学"
 };
 
 type CostProfile = { tuition:string; shared:string; privateRoom:string; note:string };
@@ -36,9 +41,9 @@ const HIGH_COST = new Set(["Stanford University","Massachusetts Institute of Tec
 const LOWER_COST = new Set(["University of Michigan–Ann Arbor","University of Notre Dame","University of Florida","University of Illinois Urbana-Champaign","University of Wisconsin–Madison","Ohio State University","Purdue University","University of Georgia","University of Rochester"]);
 const PRIVATE_SCHOOLS = new Set(["Princeton University","Massachusetts Institute of Technology","Harvard University","Stanford University","University of Pennsylvania","California Institute of Technology","Cornell University","Brown University","Columbia University","Duke University","Johns Hopkins University","Northwestern University","Rice University","Vanderbilt University","Carnegie Mellon University","University of Notre Dame","Washington University in St. Louis","University of Southern California","New York University","Tufts University","Boston University","Lehigh University","Northeastern University","University of Rochester"]);
 const costFor = (school:string):CostProfile => ({
-  tuition: PRIVATE_SCHOOLS.has(school) ? "约 US$55,000–75,000/学年" : "约 US$30,000–60,000/学年（国际生）",
-  shared: HIGH_COST.has(school) ? "约 US$1,000–1,800/月" : LOWER_COST.has(school) ? "约 US$600–1,000/月" : "约 US$750–1,300/月",
-  privateRoom: HIGH_COST.has(school) ? "约 US$1,600–3,000/月" : LOWER_COST.has(school) ? "约 US$900–1,500/月" : "约 US$1,100–2,000/月",
+  tuition: school.includes("Hong Kong") || school==="The University of Hong Kong" ? "约 HK$180,000–320,000/项目" : ["University of Toronto","University of British Columbia","McGill University"].includes(school) ? "约 C$25,000–70,000/学年（国际生）" : PRIVATE_SCHOOLS.has(school) ? "约 US$55,000–75,000/学年" : "约 US$30,000–60,000/学年（国际生）",
+  shared: school.includes("Hong Kong") || school==="The University of Hong Kong" ? "约 HK$5,500–10,000/月" : ["University of Toronto","University of British Columbia","McGill University"].includes(school) ? "约 C$900–1,800/月" : HIGH_COST.has(school) ? "约 US$1,000–1,800/月" : LOWER_COST.has(school) ? "约 US$600–1,000/月" : "约 US$750–1,300/月",
+  privateRoom: school.includes("Hong Kong") || school==="The University of Hong Kong" ? "约 HK$12,000–25,000/月" : ["University of Toronto","University of British Columbia","McGill University"].includes(school) ? "约 C$1,500–3,000/月" : HIGH_COST.has(school) ? "约 US$1,600–3,000/月" : LOWER_COST.has(school) ? "约 US$900–1,500/月" : "约 US$1,100–2,000/月",
   note:"通常需护照/身份证明、I-20或录取证明、押金与首月房租；没有美国信用记录时，可能需要担保人或预付数月房租。"
 });
 
@@ -125,7 +130,17 @@ const EXTRA_PROGRAMS: Program[] = [
   relatedProgram("rochester-me","University of Rochester",46,"Mechanical Engineering","MS","机械工程","https://www.hajim.rochester.edu/me/graduate/",[{name:"Energy",courses:["Thermodynamics","Heat Transfer","Fluid Mechanics"]},{name:"Mechanics & Design",courses:["Solid Mechanics","Design","Finite Elements"]}])
 ];
 
-const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS].sort((a,b)=>a.rank-b.rank || a.school.localeCompare(b.school));
+const REGIONAL_PROGRAMS: Program[] = [
+  {...relatedProgram("vtech-me","Virginia Polytechnic Institute and State University",51,"Mechanical Engineering","MS","机械工程","https://me.vt.edu/graduate.html",[{name:"Robotics & Control",courses:["Robotics","Control Systems","Mechatronics"]},{name:"Thermal Fluids",courses:["Thermodynamics","Fluid Mechanics","Heat Transfer"]}]),region:"美国"},
+  {...relatedProgram("hku-me","The University of Hong Kong",1,"Mechanical Engineering","MSc(Eng)","机械工程","https://www.mech.hku.hk/academic-programmes/postgraduate/taught-postgraduate",[{name:"Energy & Environment",courses:["Energy Systems","Thermofluids","Sustainability"]},{name:"Design & Manufacturing",courses:["Advanced Manufacturing","Design","Materials"]}]),region:"香港"},
+  {...relatedProgram("cuhk-mae","The Chinese University of Hong Kong",2,"Mechanical and Automation Engineering","MSc","机械/自动化","https://www.mae.cuhk.edu.hk/programmes/postgraduate-programmes/",[{name:"Robotics & Automation",courses:["Robotics","Automation","Machine Intelligence"]},{name:"Smart Manufacturing",courses:["Manufacturing Systems","Control","Data Analytics"]}]),region:"香港"},
+  {...relatedProgram("hkust-me","The Hong Kong University of Science and Technology",3,"Mechanical Engineering","MSc","机械工程","https://prog-crs.hkust.edu.hk/pgprog/2026-27/msc-mech",[{name:"Advanced Materials",courses:["Materials","Mechanics","Manufacturing"]},{name:"Energy & Fluids",courses:["Energy Systems","Fluid Mechanics","Heat Transfer"]}]),region:"香港"},
+  {...relatedProgram("utoronto-me","University of Toronto",1,"Mechanical and Industrial Engineering","MEng","机械工程","https://www.mie.utoronto.ca/programs/graduate/master-of-engineering/",[{name:"Robotics",courses:["Robotics","Control","AI for Engineering"]},{name:"Advanced Manufacturing",courses:["Manufacturing","Design","Optimization"]}]),region:"加拿大"},
+  {...relatedProgram("ubc-me","University of British Columbia",2,"Mechanical Engineering","MEng","机械工程","https://mech.ubc.ca/graduate/master-of-engineering/",[{name:"Mechatronics",courses:["Mechatronics","Robotics","Control"]},{name:"Thermofluids",courses:["Fluid Mechanics","Heat Transfer","Energy"]}]),region:"加拿大"},
+  {...relatedProgram("mcgill-me","McGill University",3,"Mechanical Engineering","MEng","机械工程","https://www.mcgill.ca/mecheng/grad",[{name:"Design & Manufacturing",courses:["Design","Manufacturing","Materials"]},{name:"Dynamics & Control",courses:["Dynamics","Control","Robotics"]}]),region:"加拿大"}
+];
+
+const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS, ...REGIONAL_PROGRAMS].sort((a,b)=>a.rank-b.rank || a.school.localeCompare(b.school));
 
 const dateLabel = (date: string) => date === "待公布" ? date : new Date(`${date}T00:00:00`).toLocaleDateString("zh-CN", {year:"numeric",month:"short",day:"numeric"});
 
@@ -133,6 +148,7 @@ export default function Home() {
   const [tab,setTab] = useState<"library"|"targets">("library");
   const [query,setQuery] = useState("");
   const [degree,setDegree] = useState("全部");
+  const [region,setRegion] = useState<"美国"|"香港"|"加拿大">("美国");
   const [status,setStatus] = useState<"全部"|"已核实"|"待复核">("全部");
   const [targets,setTargets] = useState<string[]>([]);
   const [selected,setSelected] = useState<Program | null>(null);
@@ -148,10 +164,11 @@ export default function Home() {
 
   const list = useMemo(() => ALL_PROGRAMS.filter(p =>
     (tab === "library" || targets.includes(p.id)) &&
+    (tab === "targets" || (p.region || "美国") === region) &&
     (degree === "全部" || p.degree === degree) &&
     (status === "全部" || p.verified === status) &&
     `${p.school}${SCHOOL_NAMES[p.school] || ""}${p.program}${p.degree}${p.field}`.toLowerCase().includes(query.toLowerCase())
-  ),[tab,targets,degree,status,query]);
+  ),[tab,targets,degree,status,region,query]);
 
   const toggleTarget = (id:string) => setTargets(old => old.includes(id) ? old.filter(x=>x!==id) : [...old,id]);
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
@@ -163,7 +180,7 @@ export default function Home() {
         <button className={tab==="library"?"active":""} onClick={()=>setTab("library")}>项目库 <small>{ALL_PROGRAMS.length}</small></button>
         <button className={tab==="targets"?"active":""} onClick={()=>setTab("targets")}>我的目标 <small>{targets.length}</small></button>
       </nav>
-      <div className="side-note"><b>2027 FALL</b><p>美国机械及相关工程硕士申请</p><span>数据保存在当前浏览器</span></div>
+      <div className="side-note"><b>2027 FALL</b><p>美国、香港及加拿大机械工程硕士申请</p><span>数据保存在当前浏览器</span></div>
     </aside>
 
     <section className="page">
@@ -182,8 +199,9 @@ export default function Home() {
       {status!=="全部" && <div className={`filter-notice ${status==="已核实"?"is-verified":"is-pending"}`}>正在显示：{status==="已核实"?"已核实项目":"待官方更新项目"}（{list.length}）<button onClick={()=>setStatus("全部")}>显示全部</button></div>}
 
       <div className="toolbar">
+        <div className="region-tabs" aria-label="地区筛选">{(["美国","香港","加拿大"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{r}</button>)}</div>
         <label><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索学校、专业或方向" /></label>
-        <select value={degree} onChange={e=>setDegree(e.target.value)}><option>全部</option><option>MS</option><option>SM</option><option>ScM</option><option>MSE</option><option>MEng</option><option>MMechE</option></select>
+        <select value={degree} onChange={e=>setDegree(e.target.value)}><option>全部</option><option>MS</option><option>MSc</option><option>MSc(Eng)</option><option>SM</option><option>ScM</option><option>MSE</option><option>MEng</option><option>MMechE</option></select>
       </div>
 
       <section className="table-card">
