@@ -143,6 +143,19 @@ const REGIONAL_PROGRAMS: Program[] = [
 const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS, ...REGIONAL_PROGRAMS].sort((a,b)=>a.rank-b.rank || a.school.localeCompare(b.school));
 
 const dateLabel = (date: string) => date === "待公布" ? date : new Date(`${date}T00:00:00`).toLocaleDateString("zh-CN", {year:"numeric",month:"short",day:"numeric"});
+const courseDescription = (course:string) => {
+  const name = course.toLowerCase();
+  if (name.includes("robot")) return "围绕机器人建模、运动学、动力学、感知、规划与控制展开，通常包含算法作业或系统项目。";
+  if (name.includes("control") || name.includes("linear system")) return "研究动态系统建模、稳定性、反馈控制与状态空间方法，并将理论应用于机械或机电系统。";
+  if (name.includes("fluid") || name.includes("aerodynamic")) return "学习流体运动的基本方程、边界层及工程分析方法，可能涉及计算或实验流体力学。";
+  if (name.includes("heat") || name.includes("thermal") || name.includes("thermodynamic")) return "涵盖热力学、传热与能量转换中的高级分析方法，并解决实际热系统设计问题。";
+  if (name.includes("manufactur")) return "介绍现代制造工艺、生产系统、数字化制造与面向制造的设计，通常结合案例或项目。";
+  if (name.includes("design") || name.includes("optimization")) return "聚焦工程设计流程、建模、约束条件与优化决策，通常通过团队项目完成方案迭代。";
+  if (name.includes("material") || name.includes("solid") || name.includes("mechanic")) return "研究材料与结构在载荷下的力学行为，涉及应力、变形、失效及数值分析。";
+  if (name.includes("energy") || name.includes("sustain")) return "分析能源转换、利用效率与可持续工程方案，并评估系统层面的技术和环境表现。";
+  if (name.includes("machine learning") || name.includes("artificial intelligence") || name.includes("data")) return "将机器学习和数据分析方法用于工程建模、预测、感知或自主系统。";
+  return "该课程属于本方向的研究生课程模块，具体教学内容、学分、先修要求和开课学期请通过项目官网课程目录确认。";
+};
 
 export default function Home() {
   const [tab,setTab] = useState<"library"|"targets">("library");
@@ -152,6 +165,7 @@ export default function Home() {
   const [status,setStatus] = useState<"全部"|"已核实"|"待复核">("全部");
   const [targets,setTargets] = useState<string[]>([]);
   const [selected,setSelected] = useState<Program | null>(null);
+  const [selectedCourse,setSelectedCourse] = useState<{course:string;track:string;program:Program}|null>(null);
   const [compare,setCompare] = useState<string[]>([]);
   const [ready,setReady] = useState(false);
 
@@ -244,11 +258,24 @@ export default function Home() {
           <p className="housing-note"><b>常见租房要求：</b>{costFor(selected.school).note}</p>
           <p className="budget-warning">费用为选校规划区间，不是学校报价；不同学分、学制、校区和房源会改变总成本，请在申请和签约前通过官网复核。</p>
         </section>
-        <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>方向与课程示例</h4>
-          {selected.tracks.map(t=><div className="track" key={t.name}><b>{t.name}</b><ul>{t.courses.map(c=><li key={c}>{c}</li>)}</ul></div>)}
+        <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>官网方向与课程整理</h4>
+          {selected.tracks.map(t=><div className="track" key={t.name}><b>{t.name}</b><ul>{t.courses.map(c=><li key={c}><button onClick={()=>setSelectedCourse({course:c,track:t.name,program:selected})}>{c}<span>查看介绍</span></button></li>)}</ul></div>)}
         </div>
         <a className="source source-button" href={selected.source} target="_blank" rel="noreferrer">直接进入机械硕士官方网站 ↗</a>
-        <p className="source-note">课程为培养方向示例，实际学期开课情况需在选课目录中再次确认。</p>
+        <p className="source-note">第一批完整整理范围为美国综合排名前 20 中已收录项目、香港 3 所及加拿大 3 所。课程名称与开课安排可能按学期调整，请以按钮链接进入的官方页面为最终依据。</p>
+      </section>
+    </div>}
+
+    {selectedCourse && <div className="course-overlay" onClick={()=>setSelectedCourse(null)}>
+      <section className="course-modal" role="dialog" aria-modal="true" aria-labelledby="course-title" onClick={e=>e.stopPropagation()}>
+        <button className="course-close" onClick={()=>setSelectedCourse(null)} aria-label="关闭课程介绍">×</button>
+        <p className="kicker">COURSE PROFILE</p>
+        <h3 id="course-title">{selectedCourse.course}</h3>
+        <p className="course-school">{SCHOOL_NAMES[selectedCourse.program.school] || selectedCourse.program.school} · {selectedCourse.track}</p>
+        <div className="course-description"><span>课程内容导读</span><p>{courseDescription(selectedCourse.course)}</p></div>
+        <div className="course-meta"><div><span>所属项目</span><b>{selectedCourse.program.degree} · {selectedCourse.program.program}</b></div><div><span>学分 / 先修课</span><b>请在当学年官方课程目录确认</b></div></div>
+        <a className="source source-button" href={selectedCourse.program.source} target="_blank" rel="noreferrer">前往官方项目与课程页面 ↗</a>
+        <p className="source-note">中文内容为便于选校的概括，不替代官网原始课程说明。</p>
       </section>
     </div>}
 
