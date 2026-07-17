@@ -167,6 +167,7 @@ const courseDescription = (course:string) => {
 
 type Category = "Favorite"|"Dream"|"Target"|"Safety"|"Priority";
 type View = "dashboard"|"schools"|"favorites";
+type ChatMessage = {role:"assistant"|"user";text:string;source?:string};
 const CATEGORY_LABELS: Record<Category,string> = {Favorite:"收藏",Dream:"梦校",Target:"目标",Safety:"保底",Priority:"优先"};
 const LOCATION_BY_SCHOOL: Record<string,string> = {
   "Stanford University":"Stanford, California", "Massachusetts Institute of Technology":"Cambridge, Massachusetts",
@@ -192,6 +193,31 @@ const deadlineInfo = (deadline:string) => {
 };
 const programLocation = (program:Program) => LOCATION_BY_SCHOOL[program.school] || (program.region==="香港"?"Hong Kong":program.region==="加拿大"?"Canada":"United States");
 const programRegion = (program:Program) => program.region || "美国";
+const schoolDomain = (program:Program) => {try{return new URL(program.source).hostname.replace(/^www\./,"")}catch{return ""}};
+const schoolIconUrl = (program:Program) => `https://www.google.com/s2/favicons?domain_url=https://${schoolDomain(program)}&sz=128`;
+function SchoolLogo({program,className=""}:{program:Program;className?:string}){
+  const label=(SCHOOL_NAMES[program.school]||program.school).slice(0,1);
+  return <span className={`school-logo ${className}`}><em>{label}</em><img src={schoolIconUrl(program)} alt={`${SCHOOL_NAMES[program.school]||program.school} 校徽`} onError={e=>{e.currentTarget.style.display="none"}} /></span>;
+}
+const answerSchoolQuestion = (question:string) => {
+  const q=question.trim().toLowerCase();
+  const program=ALL_PROGRAMS.find(p=>q.includes(p.school.toLowerCase())||q.includes((SCHOOL_NAMES[p.school]||"").toLowerCase())||q.includes(p.id.split("-")[0]));
+  if(!program){
+    if(q.includes("机器人")||q.includes("robot")){const schools=ALL_PROGRAMS.filter(p=>p.tracks.some(t=>`${t.name}${t.courses.join("")}`.toLowerCase().includes("robot"))).slice(0,6);return {text:`机器人相关项目可以先看：${schools.map(p=>SCHOOL_NAMES[p.school]||p.school).join("、")}。你可以继续问我其中一所的截止日期、费用或课程。`};}
+    if(q.includes("香港"))return {text:"香港区目前收录香港大学、香港中文大学和香港科技大学。你可以直接问，例如“香港科技大学有哪些方向？”"};
+    if(q.includes("加拿大"))return {text:"加拿大区目前收录多伦多大学、英属哥伦比亚大学和麦吉尔大学。告诉我学校名称，我可以查询费用、课程和申请要求。"};
+    return {text:"我可以查询网站内学校的截止日期、推荐信、GRE、学费、生活费、方向、课程、位置和官网。请带上学校名称，例如：“康奈尔大学学费是多少？”"};
+  }
+  const name=SCHOOL_NAMES[program.school]||program.school;
+  if(q.includes("截止")||q.includes("deadline")){const d=deadlineInfo(program.deadline);return {text:`${name} ${program.degree} 项目的截止日期是 ${dateLabel(program.deadline)}，当前状态：${d.label}。`,source:program.source};}
+  if(q.includes("学费")||q.includes("费用")||q.includes("预算")||q.includes("cost")){const c=costFor(program.school);return {text:`${name} 的规划学费为 ${c.tuition}；合租约 ${c.shared}，独居约 ${c.privateRoom}；申请费参考 ${APP_FEE_BY_REGION[programRegion(program)]}。请以官网账单为准。`,source:program.source};}
+  if(q.includes("推荐信")||q.includes("材料")){return {text:`${name} 当前记录：推荐信 ${program.letters}，CV ${program.cv}，SOP/PS ${program.sop}，GRE ${program.gre}。`,source:program.source};}
+  if(q.includes("gre")){return {text:`${name} ${program.degree} 项目的 GRE 要求当前记录为：${program.gre}。`,source:program.source};}
+  if(q.includes("课程")||q.includes("方向")||q.includes("研究")){return {text:`${name} 当前整理的方向包括：${program.tracks.map(t=>`${t.name}（${t.courses.join("、")}）`).join("；")}。`,source:program.source};}
+  if(q.includes("位置")||q.includes("城市")||q.includes("州")){return {text:`${name} 位于 ${programLocation(program)}。`,source:program.source};}
+  if(q.includes("官网")||q.includes("链接")){return {text:`这是 ${name} 的机械工程硕士官方页面：`,source:program.source};}
+  return {text:`${name} 提供 ${program.degree} in ${program.program}，综合排名记录为 #${program.rank}，位于 ${programLocation(program)}。你还可以问截止日期、费用、材料、方向或课程。`,source:program.source};
+};
 
 export default function Home() {
   const [view,setView] = useState<View>("dashboard");
@@ -214,6 +240,9 @@ export default function Home() {
   const [featureFilters,setFeatureFilters] = useState<string[]>([]);
   const [rankMax,setRankMax] = useState("全部");
   const [deadlineWindow,setDeadlineWindow] = useState("全部");
+  const [assistantOpen,setAssistantOpen] = useState(false);
+  const [assistantQuery,setAssistantQuery] = useState("");
+  const [messages,setMessages] = useState<ChatMessage[]>([{role:"assistant",text:"你好，我是坤械助手。可以问我学校、申请要求、费用、截止日期或课程。"}]);
 
   useEffect(() => {
     const saved = localStorage.getItem("me-targets");
@@ -245,6 +274,7 @@ export default function Home() {
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
   const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
   const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,8),[]);
+  const askAssistant=()=>{const value=assistantQuery.trim();if(!value)return;const answer=answerSchoolQuestion(value);setMessages(old=>[...old,{role:"user",text:value},{role:"assistant",...answer}]);setAssistantQuery("")};
   const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":"项目库";
 
   return <main className="app-shell">
@@ -267,7 +297,7 @@ export default function Home() {
 
       {view==="dashboard" && <section className="dashboard-view">
         <div className="dashboard-heading"><div><span className="eyebrow">UPCOMING DEADLINES</span><h2>即将截止</h2></div><button onClick={()=>setView("schools")}>查看全部项目 →</button></div>
-        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><div className="deadline-logo">{(SCHOOL_NAMES[p.school]||p.school).slice(0,1)}</div><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>暂无已公布的临近截止日期</b><span>项目公布 2027 Fall 截止日期后会自动按剩余天数排序。</span></div>}</div>
+        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>暂无已公布的临近截止日期</b><span>项目公布 2027 Fall 截止日期后会自动按剩余天数排序。</span></div>}</div>
       </section>}
 
       {(view==="schools"||view==="favorites") && <>
@@ -293,7 +323,7 @@ export default function Home() {
       <section className="table-card">
         <div className="thead"><span>学校 / 项目</span><span>学位</span><span>截止日期</span><span>倒计时</span><span>分类</span><span>状态</span><span /></div>
         {list.map(p=><article className={`row ${p.verified==="已核实"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)}>
-          <div className="school"><i>{p.rank}</i><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school} · {p.program} · {p.field}</span></div></div>
+          <div className="school"><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>#{p.rank} · {p.school} · {p.program} · {p.field}</span></div></div>
           <strong className="degree">{p.degree}</strong>
           <span>{dateLabel(p.deadline)}</span>
           <span className={`countdown ${deadlineInfo(p.deadline).tone}`}>{deadlineInfo(p.deadline).label}</span>
@@ -314,7 +344,7 @@ export default function Home() {
     {selected && <div className="overlay" onClick={()=>setSelected(null)}>
       <section className="drawer" onClick={e=>e.stopPropagation()}>
         <button className="close" onClick={()=>setSelected(null)}>×</button>
-        <div className="school-banner"><div className="school-mark">{(SCHOOL_NAMES[selected.school]||selected.school).slice(0,1)}</div><span>{programLocation(selected)}</span></div>
+        <div className="school-banner"><SchoolLogo program={selected} className="school-mark"/><span>{programLocation(selected)}</span></div>
         <p className="kicker">PROGRAM PROFILE · #{selected.rank}</p>
         <h2>{SCHOOL_NAMES[selected.school] || selected.school}</h2><h3>{selected.school} · {selected.degree} in {selected.program}</h3>
         <div className="detail-actions"><button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?"从目标中移除":"＋ 添加到我的目标"}</button><select className={`category-select ${categories[selected.id]||""}`} value={categories[selected.id]||""} onChange={e=>setCategory(selected.id,e.target.value)}><option value="">设置分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></div>
@@ -360,6 +390,9 @@ export default function Home() {
         <p className="source-note">中文内容为便于选校的概括，不替代官网原始课程说明。</p>
       </section>
     </div>}
+
+    <button className={`assistant-launcher ${assistantOpen?"open":""}`} onClick={()=>setAssistantOpen(v=>!v)} aria-label="打开坤械助手"><img src="./kun-mech-assistant.png" alt="坤械助手"/><span><b>坤械助手</b><small>问学校问题</small></span></button>
+    {assistantOpen&&<section className="assistant-panel" aria-label="坤械助手聊天窗口"><header><img src="./kun-mech-assistant.png" alt=""/><div><b>坤械助手</b><span>基于网站学校数据回答</span></div><button onClick={()=>setAssistantOpen(false)}>×</button></header><div className="assistant-messages">{messages.map((m,i)=><div key={i} className={`assistant-message ${m.role}`}><p>{m.text}</p>{m.source&&<a href={m.source} target="_blank" rel="noreferrer">查看官方页面 ↗</a>}</div>)}</div><div className="assistant-suggestions">{["康奈尔大学学费","港科大有哪些方向","多伦多大学申请材料"].map(q=><button key={q} onClick={()=>setAssistantQuery(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();askAssistant()}}><input value={assistantQuery} onChange={e=>setAssistantQuery(e.target.value)} placeholder="输入学校和问题…"/><button type="submit">发送</button></form><small className="assistant-note">回答来自当前网站数据，申请前请以官网为准。</small></section>}
 
     {compareOpen&&<div className="compare-overlay" onClick={()=>setCompareOpen(false)}><section className="compare-modal" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCompareOpen(false)}>×</button><p className="kicker">SCHOOL COMPARISON</p><h2>学校对比</h2><div className="compare-table"><div className="compare-labels"><b>项目</b><span>综合排名</span><span>申请费</span><span>学费</span><span>生活费</span><span>截止日期</span><span>位置</span><span>研究优势</span><span>官网</span></div>{compare.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;return <div className="compare-column" key={id}><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>#{p.rank}</span><span>{APP_FEE_BY_REGION[programRegion(p)]}</span><span>{costFor(p.school).tuition}</span><span>{costFor(p.school).shared}</span><span>{dateLabel(p.deadline)}</span><span>{programLocation(p)}</span><span>{p.tracks.map(t=>t.name).join(" · ")}</span><a href={p.source} target="_blank" rel="noreferrer">官网 ↗</a></div>})}</div></section></div>}
     {!!compare.length && <div className="compare-bar"><span>已选择 {compare.length}/3 个项目</span>{compare.map(id=>{const program=PROGRAM_BY_ID.get(id);return <b key={id}>{program ? SCHOOL_NAMES[program.school] || program.school.split(" ")[0] : id} <button onClick={()=>toggleCompare(id)}>×</button></b>})}<button className="compare-now" disabled={compare.length<2} onClick={()=>setCompareOpen(true)}>对比 {compare.length} 所学校</button></div>}
