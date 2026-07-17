@@ -199,9 +199,10 @@ function SchoolLogo({program,className=""}:{program:Program;className?:string}){
   const label=(SCHOOL_NAMES[program.school]||program.school).slice(0,1);
   return <span className={`school-logo ${className}`}><em>{label}</em><img src={schoolIconUrl(program)} alt={`${SCHOOL_NAMES[program.school]||program.school} 校徽`} onError={e=>{e.currentTarget.style.display="none"}} /></span>;
 }
-const answerSchoolQuestion = (question:string) => {
+const answerSchoolQuestion = (question:string,contextId?:string) => {
   const q=question.trim().toLowerCase();
-  const program=ALL_PROGRAMS.find(p=>q.includes(p.school.toLowerCase())||q.includes((SCHOOL_NAMES[p.school]||"").toLowerCase())||q.includes(p.id.split("-")[0]));
+  const explicitProgram=ALL_PROGRAMS.find(p=>q.includes(p.school.toLowerCase())||q.includes((SCHOOL_NAMES[p.school]||"").toLowerCase())||q.includes(p.id.split("-")[0]));
+  const program=explicitProgram||(contextId?PROGRAM_BY_ID.get(contextId):undefined);
   if(!program){
     if(q.includes("机器人")||q.includes("robot")){const schools=ALL_PROGRAMS.filter(p=>p.tracks.some(t=>`${t.name}${t.courses.join("")}`.toLowerCase().includes("robot"))).slice(0,6);return {text:`机器人相关项目可以先看：${schools.map(p=>SCHOOL_NAMES[p.school]||p.school).join("、")}。你可以继续问我其中一所的截止日期、费用或课程。`};}
     if(q.includes("香港"))return {text:"香港区目前收录香港大学、香港中文大学和香港科技大学。你可以直接问，例如“香港科技大学有哪些方向？”"};
@@ -209,14 +210,15 @@ const answerSchoolQuestion = (question:string) => {
     return {text:"我可以查询网站内学校的截止日期、推荐信、GRE、学费、生活费、方向、课程、位置和官网。请带上学校名称，例如：“康奈尔大学学费是多少？”"};
   }
   const name=SCHOOL_NAMES[program.school]||program.school;
-  if(q.includes("截止")||q.includes("deadline")){const d=deadlineInfo(program.deadline);return {text:`${name} ${program.degree} 项目的截止日期是 ${dateLabel(program.deadline)}，当前状态：${d.label}。`,source:program.source};}
-  if(q.includes("学费")||q.includes("费用")||q.includes("预算")||q.includes("cost")){const c=costFor(program.school);return {text:`${name} 的规划学费为 ${c.tuition}；合租约 ${c.shared}，独居约 ${c.privateRoom}；申请费参考 ${APP_FEE_BY_REGION[programRegion(program)]}。请以官网账单为准。`,source:program.source};}
-  if(q.includes("推荐信")||q.includes("材料")){return {text:`${name} 当前记录：推荐信 ${program.letters}，CV ${program.cv}，SOP/PS ${program.sop}，GRE ${program.gre}。`,source:program.source};}
-  if(q.includes("gre")){return {text:`${name} ${program.degree} 项目的 GRE 要求当前记录为：${program.gre}。`,source:program.source};}
-  if(q.includes("课程")||q.includes("方向")||q.includes("研究")){return {text:`${name} 当前整理的方向包括：${program.tracks.map(t=>`${t.name}（${t.courses.join("、")}）`).join("；")}。`,source:program.source};}
-  if(q.includes("位置")||q.includes("城市")||q.includes("州")){return {text:`${name} 位于 ${programLocation(program)}。`,source:program.source};}
-  if(q.includes("官网")||q.includes("链接")){return {text:`这是 ${name} 的机械工程硕士官方页面：`,source:program.source};}
-  return {text:`${name} 提供 ${program.degree} in ${program.program}，综合排名记录为 #${program.rank}，位于 ${programLocation(program)}。你还可以问截止日期、费用、材料、方向或课程。`,source:program.source};
+  const linked={source:program.source,programId:program.id};
+  if(q.includes("截止")||q.includes("deadline")){const d=deadlineInfo(program.deadline);return {text:`${name} ${program.degree} 项目的截止日期是 ${dateLabel(program.deadline)}，当前状态：${d.label}。`,...linked};}
+  if(q.includes("学费")||q.includes("费用")||q.includes("预算")||q.includes("cost")){const c=costFor(program.school);return {text:`${name} 的规划学费为 ${c.tuition}；合租约 ${c.shared}，独居约 ${c.privateRoom}；申请费参考 ${APP_FEE_BY_REGION[programRegion(program)]}。请以官网账单为准。`,...linked};}
+  if(q.includes("推荐信")||q.includes("材料")){return {text:`${name} 当前记录：推荐信 ${program.letters}，CV ${program.cv}，SOP/PS ${program.sop}，GRE ${program.gre}。`,...linked};}
+  if(q.includes("gre")){return {text:`${name} ${program.degree} 项目的 GRE 要求当前记录为：${program.gre}。`,...linked};}
+  if(q.includes("课程")||q.includes("方向")||q.includes("研究")){return {text:`${name} 当前整理的方向包括：${program.tracks.map(t=>`${t.name}（${t.courses.join("、")}）`).join("；")}。`,...linked};}
+  if(q.includes("位置")||q.includes("城市")||q.includes("州")){return {text:`${name} 位于 ${programLocation(program)}。`,...linked};}
+  if(q.includes("官网")||q.includes("链接")){return {text:`这是 ${name} 的机械工程硕士官方页面：`,...linked};}
+  return {text:`${name} 提供 ${program.degree} in ${program.program}，综合排名记录为 #${program.rank}，位于 ${programLocation(program)}。你还可以继续问“学费呢？”或“课程呢？”。`,...linked};
 };
 
 export default function Home() {
@@ -243,6 +245,7 @@ export default function Home() {
   const [assistantOpen,setAssistantOpen] = useState(false);
   const [assistantQuery,setAssistantQuery] = useState("");
   const [messages,setMessages] = useState<ChatMessage[]>([{role:"assistant",text:"你好，我是坤械助手。可以问我学校、申请要求、费用、截止日期或课程。"}]);
+  const [assistantSchool,setAssistantSchool] = useState<string>();
 
   useEffect(() => {
     const saved = localStorage.getItem("me-targets");
@@ -274,7 +277,8 @@ export default function Home() {
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
   const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
   const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,8),[]);
-  const askAssistant=()=>{const value=assistantQuery.trim();if(!value)return;const answer=answerSchoolQuestion(value);setMessages(old=>[...old,{role:"user",text:value},{role:"assistant",...answer}]);setAssistantQuery("")};
+  const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const answer=answerSchoolQuestion(question,assistantSchool);if("programId" in answer&&answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:answer.text,source:"source" in answer?answer.source:undefined}]);setAssistantQuery("")};
+  const askAssistant=()=>sendAssistantQuestion(assistantQuery);
   const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":"项目库";
 
   return <main className="app-shell">
@@ -392,7 +396,7 @@ export default function Home() {
     </div>}
 
     <button className={`assistant-launcher ${assistantOpen?"open":""}`} onClick={()=>setAssistantOpen(v=>!v)} aria-label="打开坤械助手"><img src="./kun-mech-assistant.png" alt="坤械助手"/><span><b>坤械助手</b><small>问学校问题</small></span></button>
-    {assistantOpen&&<section className="assistant-panel" aria-label="坤械助手聊天窗口"><header><img src="./kun-mech-assistant.png" alt=""/><div><b>坤械助手</b><span>基于网站学校数据回答</span></div><button onClick={()=>setAssistantOpen(false)}>×</button></header><div className="assistant-messages">{messages.map((m,i)=><div key={i} className={`assistant-message ${m.role}`}><p>{m.text}</p>{m.source&&<a href={m.source} target="_blank" rel="noreferrer">查看官方页面 ↗</a>}</div>)}</div><div className="assistant-suggestions">{["康奈尔大学学费","港科大有哪些方向","多伦多大学申请材料"].map(q=><button key={q} onClick={()=>setAssistantQuery(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();askAssistant()}}><input value={assistantQuery} onChange={e=>setAssistantQuery(e.target.value)} placeholder="输入学校和问题…"/><button type="submit">发送</button></form><small className="assistant-note">回答来自当前网站数据，申请前请以官网为准。</small></section>}
+    {assistantOpen&&<section className="assistant-panel" aria-label="坤械助手聊天窗口"><header><img src="./kun-mech-assistant.png" alt=""/><div><b>坤械助手</b><span>在线 · 支持连续追问</span></div><button onClick={()=>setAssistantOpen(false)}>×</button></header><div className="assistant-messages">{messages.map((m,i)=><div key={i} className={`assistant-message ${m.role}`}><p>{m.text}</p>{m.source&&<a href={m.source} target="_blank" rel="noreferrer">查看官方页面 ↗</a>}</div>)}</div><div className="assistant-suggestions">{["康奈尔大学学费","港科大有哪些方向","多伦多大学申请材料"].map(q=><button key={q} onClick={()=>sendAssistantQuestion(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();askAssistant()}}><input value={assistantQuery} onChange={e=>setAssistantQuery(e.target.value)} placeholder="输入学校和问题，也可以连续追问…" autoFocus/><button type="submit">发送</button></form><small className="assistant-note">回答来自当前网站数据，申请前请以官网为准。</small></section>}
 
     {compareOpen&&<div className="compare-overlay" onClick={()=>setCompareOpen(false)}><section className="compare-modal" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCompareOpen(false)}>×</button><p className="kicker">SCHOOL COMPARISON</p><h2>学校对比</h2><div className="compare-table"><div className="compare-labels"><b>项目</b><span>综合排名</span><span>申请费</span><span>学费</span><span>生活费</span><span>截止日期</span><span>位置</span><span>研究优势</span><span>官网</span></div>{compare.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;return <div className="compare-column" key={id}><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>#{p.rank}</span><span>{APP_FEE_BY_REGION[programRegion(p)]}</span><span>{costFor(p.school).tuition}</span><span>{costFor(p.school).shared}</span><span>{dateLabel(p.deadline)}</span><span>{programLocation(p)}</span><span>{p.tracks.map(t=>t.name).join(" · ")}</span><a href={p.source} target="_blank" rel="noreferrer">官网 ↗</a></div>})}</div></section></div>}
     {!!compare.length && <div className="compare-bar"><span>已选择 {compare.length}/3 个项目</span>{compare.map(id=>{const program=PROGRAM_BY_ID.get(id);return <b key={id}>{program ? SCHOOL_NAMES[program.school] || program.school.split(" ")[0] : id} <button onClick={()=>toggleCompare(id)}>×</button></b>})}<button className="compare-now" disabled={compare.length<2} onClick={()=>setCompareOpen(true)}>对比 {compare.length} 所学校</button></div>}
