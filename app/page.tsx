@@ -166,9 +166,7 @@ const courseDescription = (course:string) => {
 };
 
 type Category = "Favorite"|"Dream"|"Target"|"Safety"|"Priority";
-type TrackerStatus = "Not Started"|"In Progress"|"Completed";
-type View = "dashboard"|"schools"|"favorites"|"tracker";
-const CHECKLIST = ["Resume","CV","Statement of Purpose","Personal Statement","Recommendation Letters","Transcript","English Test","GRE","Application Fee","Application Submitted","Interview","Decision","Deposit","Visa"];
+type View = "dashboard"|"schools"|"favorites";
 const CATEGORY_LABELS: Record<Category,string> = {Favorite:"收藏",Dream:"梦校",Target:"目标",Safety:"保底",Priority:"优先"};
 const LOCATION_BY_SCHOOL: Record<string,string> = {
   "Stanford University":"Stanford, California", "Massachusetts Institute of Technology":"Cambridge, Massachusetts",
@@ -213,7 +211,6 @@ export default function Home() {
   const [categoryFilter,setCategoryFilter] = useState<Category|"全部">("全部");
   const [categories,setCategories] = useState<Record<string,Category>>({});
   const [notes,setNotes] = useState<Record<string,string>>({});
-  const [trackers,setTrackers] = useState<Record<string,Record<string,TrackerStatus>>>({});
   const [featureFilters,setFeatureFilters] = useState<string[]>([]);
   const [rankMax,setRankMax] = useState("全部");
   const [deadlineWindow,setDeadlineWindow] = useState("全部");
@@ -223,14 +220,13 @@ export default function Home() {
     if (saved) setTargets(JSON.parse(saved));
     const savedCategories=localStorage.getItem("me-categories"); if(savedCategories)setCategories(JSON.parse(savedCategories));
     const savedNotes=localStorage.getItem("me-notes"); if(savedNotes)setNotes(JSON.parse(savedNotes));
-    const savedTrackers=localStorage.getItem("me-trackers"); if(savedTrackers)setTrackers(JSON.parse(savedTrackers));
+    localStorage.removeItem("me-trackers");
     const savedTheme=localStorage.getItem("me-theme"); setDark(savedTheme?savedTheme==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches);
     setReady(true);
   },[]);
   useEffect(() => { if (ready) localStorage.setItem("me-targets",JSON.stringify(targets)); },[targets,ready]);
   useEffect(()=>{if(ready)localStorage.setItem("me-categories",JSON.stringify(categories))},[categories,ready]);
   useEffect(()=>{if(ready)localStorage.setItem("me-notes",JSON.stringify(notes))},[notes,ready]);
-  useEffect(()=>{if(ready)localStorage.setItem("me-trackers",JSON.stringify(trackers))},[trackers,ready]);
   useEffect(()=>{if(ready){localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"}},[dark,ready]);
 
   const list = useMemo(() => ALL_PROGRAMS.filter(p =>
@@ -248,10 +244,8 @@ export default function Home() {
   const toggleTarget = (id:string) => setTargets(old => old.includes(id) ? old.filter(x=>x!==id) : [...old,id]);
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
   const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
-  const setTracker=(id:string,item:string,value:TrackerStatus)=>setTrackers(old=>({...old,[id]:{...(old[id]||{}),[item]:value}}));
-  const progressFor=(id:string)=>Math.round(CHECKLIST.filter(item=>trackers[id]?.[item]==="Completed").length/CHECKLIST.length*100);
   const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,8),[]);
-  const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":view==="tracker"?"申请进度":"项目库";
+  const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":"项目库";
 
   return <main className="app-shell">
     <aside>
@@ -260,7 +254,6 @@ export default function Home() {
         <button className={view==="dashboard"?"active":""} onClick={()=>setView("dashboard")}><span>⌂</span> Dashboard</button>
         <button className={view==="schools"?"active":""} onClick={()=>{setView("schools");setTab("library")}}><span>◇</span> 项目库 <small>{ALL_PROGRAMS.length}</small></button>
         <button className={view==="favorites"?"active":""} onClick={()=>setView("favorites")}><span>☆</span> 收藏分类 <small>{Object.keys(categories).length}</small></button>
-        <button className={view==="tracker"?"active":""} onClick={()=>setView("tracker")}><span>✓</span> 申请进度</button>
       </nav>
       <button className="theme-toggle" onClick={()=>setDark(v=>!v)} aria-label="切换深色模式"><span>{dark?"☀":"◐"}</span>{dark?"浅色模式":"深色模式"}</button>
       <div className="side-note"><b>2027 FALL</b><p>机械工程硕士申请</p><span>数据保存在当前浏览器</span></div>
@@ -316,7 +309,6 @@ export default function Home() {
       <p className="disclaimer">申请要求与费用以项目官网为准；未确认内容标记为“待复核”。个人分类、笔记与进度仅保存在当前浏览器。</p>
       </>}
 
-      {view==="tracker"&&<section className="tracker-list">{targets.length?targets.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;const progress=progressFor(id);return <button key={id} onClick={()=>setSelected(p)} className="tracker-card"><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><div className="progress-meta"><span>{progress}%</span><i><em style={{width:`${progress}%`}} /></i></div></button>}):<div className="premium-empty"><b>还没有申请目标</b><span>在项目库中点击“＋”添加学校后，即可开始管理申请清单。</span><button onClick={()=>setView("schools")}>浏览项目</button></div>}</section>}
     </section>
 
     {selected && <div className="overlay" onClick={()=>setSelected(null)}>
@@ -350,7 +342,6 @@ export default function Home() {
           {selected.tracks.map(t=><div className="track" key={t.name}><b>{t.name}</b><ul>{t.courses.map(c=><li key={c}><button onClick={()=>setSelectedCourse({course:c,track:t.name,program:selected})}>{c}<span>查看介绍</span></button></li>)}</ul></div>)}
         </div>
         <section className="notes-section"><p className="kicker">PRIVATE NOTES · AUTO SAVED</p><h4>私人笔记</h4><textarea value={notes[selected.id]||""} onChange={e=>setNotes(old=>({...old,[selected.id]:e.target.value}))} placeholder="记录教授、研究方向、就业、天气、安全或个人想法…" /><span>仅保存在当前浏览器</span></section>
-        <section className="checklist-section"><div className="section-title"><div><p className="kicker">APPLICATION TRACKER</p><h4>申请清单</h4></div><b>{progressFor(selected.id)}%</b></div><div className="progress-line"><i style={{width:`${progressFor(selected.id)}%`}} /></div><div className="checklist-grid">{CHECKLIST.map(item=><label key={item}><span>{item}</span><select value={trackers[selected.id]?.[item]||"Not Started"} onChange={e=>setTracker(selected.id,item,e.target.value as TrackerStatus)}><option>Not Started</option><option>In Progress</option><option>Completed</option></select></label>)}</div></section>
         <div className="official-links"><a className="source source-button" href={selected.source} target="_blank" rel="noreferrer">Department Website ↗</a><a className="source secondary-link" href={selected.source} target="_blank" rel="noreferrer">Official Website ↗</a><a className="source secondary-link" href={selected.source} target="_blank" rel="noreferrer">Application Portal ↗</a></div>
         <p className="last-updated">Last Updated · July 17, 2026</p>
         <p className="source-note">第一批完整整理范围为美国综合排名前 20 中已收录项目、香港 3 所及加拿大 3 所。课程名称与开课安排可能按学期调整，请以按钮链接进入的官方页面为最终依据。</p>
