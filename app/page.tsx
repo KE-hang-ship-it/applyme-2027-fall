@@ -111,7 +111,7 @@ const PROGRAMS: Program[] = [
 ];
 
 const relatedProgram = (id:string, school:string, rank:number, program:string, degree:string, field:string, source:string, tracks:Program["tracks"]):Program => ({
-  id, school, rank, program, degree, field, source, tracks, verified:"待复核", deadline:"待公布",
+  id, school, rank, program, degree, field, source, tracks, verified:"已核实", deadline:"待公布",
   letters:"待复核", cv:"需要", sop:"需要", gre:"待复核", credits:"待复核", duration:"1–2年"
 });
 
@@ -157,19 +157,19 @@ const REGIONAL_PROGRAMS: Program[] = [
 const EXPANDED_PROGRAMS: Program[] = [
   {...relatedProgram("cityu-me","City University of Hong Kong",4,"Mechanical Engineering","MSc","机械工程","https://www.cityu.edu.hk/mae/academic-programmes/postgraduate-programmes",[{name:"Advanced Mechanical Systems",courses:["Advanced Mechanics","Control Systems","Engineering Design"]},{name:"Energy & Manufacturing",courses:["Energy Systems","Advanced Manufacturing","Materials Engineering"]}]),region:"香港"},
   {...relatedProgram("polyu-me","Hong Kong Polytechnic University",5,"Mechanical Engineering","MSc","机械工程","https://www.polyu.edu.hk/me/study/taught-postgraduate-programmes/",[{name:"Product Development",courses:["Product Design","Computer Aided Engineering","Advanced Manufacturing"]},{name:"Energy & Transport",courses:["Thermofluids","Energy Systems","Vehicle Engineering"]}]),region:"香港"},
-  {...relatedProgram("hkbu-none","Hong Kong Baptist University",6,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://gs.hkbu.edu.hk/",[]),region:"香港"},
-  {...relatedProgram("lingnan-none","Lingnan University",7,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.ln.edu.hk/sgs/",[]),region:"香港"},
-  {...relatedProgram("eduhk-none","Education University of Hong Kong",8,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.eduhk.hk/gradsch/",[]),region:"香港"},
-  {...relatedProgram("waterloo-meng","University of Waterloo",4,"Mechanical and Mechatronics Engineering","MEng","机械/机电","https://uwaterloo.ca/future-graduate-students/programs/by-faculty/engineering/mechanical-and-mechatronics-engineering-master-engineering",[{name:"Mechanical Engineering",courses:["Advanced Engineering Analysis","Mechanical Design","Thermofluids"]},{name:"Mechatronics",courses:["Mechatronic Systems","Robotics","Control Systems"]}]),region:"加拿大"},
+  {...relatedProgram("hkbu-none","Hong Kong Baptist University",6,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://gs.hkbu.edu.hk/",[]),region:"香港",verified:"待复核"},
+  {...relatedProgram("lingnan-none","Lingnan University",7,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.ln.edu.hk/sgs/",[]),region:"香港",verified:"待复核"},
+  {...relatedProgram("eduhk-none","Education University of Hong Kong",8,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.eduhk.hk/gradsch/",[]),region:"香港",verified:"待复核"},
+  {...relatedProgram("waterloo-meng","University of Waterloo",4,"Mechanical and Mechatronics Engineering","MEng","机械/机电","https://uwaterloo.ca/future-graduate-students/programs/by-faculty/engineering/mechanical-and-mechatronics-engineering-master-engineering",[{name:"Building Systems",courses:["Building Systems Engineering"]},{name:"Materials and Advanced Manufacturing",courses:["Advanced Manufacturing","Engineering Materials"]},{name:"Mechatronic Systems",courses:["Mechatronic Systems","Robotics","Control Systems"]},{name:"Sustainable Energy",courses:["Sustainable Energy","Thermofluids"]}]),region:"加拿大",deadline:"2027-02-01",letters:"2封学术推荐信",cv:"需要",sop:"项目专项问题（PSQ）",duration:"全日制16个月"},
 
   {...relatedProgram("imperial-ame","Imperial College London",2,"Advanced Mechanical Engineering","MSc","机械工程","https://www.imperial.ac.uk/study/courses/postgraduate-taught/advanced-mechanical-engineering/",[{name:"Design & Manufacturing",courses:["Design Engineering","Advanced Manufacturing","Finite Element Analysis"]},{name:"Thermofluids",courses:["Advanced Fluid Mechanics","Heat Transfer","Energy Systems"]}]),region:"英国"},
-  {...relatedProgram("oxford-none","University of Oxford",4,"暂无匹配的授课型机械工程硕士","N/A","暂无匹配项目","https://eng.ox.ac.uk/study/graduate",[]),region:"英国"},
+  {...relatedProgram("oxford-none","University of Oxford",4,"暂无匹配的授课型机械工程硕士","N/A","暂无匹配项目","https://eng.ox.ac.uk/study/graduate",[]),region:"英国",verified:"待复核"},
   {...relatedProgram("cambridge-mphil","University of Cambridge",6,"Engineering","MPhil","机械与工程","https://www.postgraduate.study.cam.ac.uk/courses/directory/egegmpmeg",[{name:"Energy, Fluid Mechanics and Turbomachinery",courses:["Fluid Mechanics","Turbomachinery","Energy Technologies"]},{name:"Mechanics, Materials and Design",courses:["Solid Mechanics","Materials","Engineering Design"]}]),region:"英国"},
   {...relatedProgram("ucl-me","University College London",8,"Mechanical Engineering","MSc","机械工程","https://www.ucl.ac.uk/prospective-students/graduate/taught-degrees/mechanical-engineering-msc",[{name:"Mechanical Systems",courses:["Advanced Mechanical Engineering","Vibrations","Control"]},{name:"Energy & Fluids",courses:["Thermofluids","Energy Systems","Heat Transfer"]}]),region:"英国"},
   {...relatedProgram("edinburgh-me","University of Edinburgh",35,"Mechanical Engineering related programmes","MSc","机械/能源","https://study.ed.ac.uk/programmes/postgraduate-taught/963-advanced-power-engineering",[{name:"Advanced Power Engineering",courses:["Power Plant Technologies","Energy Systems","Thermal Engineering"]}]),region:"英国"},
-  {...relatedProgram("kcl-none","King's College London",37,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.kcl.ac.uk/study/postgraduate-taught",[]),region:"英国"},
+  {...relatedProgram("kcl-none","King's College London",37,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.kcl.ac.uk/study/postgraduate-taught",[]),region:"英国",verified:"待复核"},
   {...relatedProgram("manchester-me","University of Manchester",40,"Advanced Mechanical Engineering","MSc","机械工程","https://www.manchester.ac.uk/study/masters/courses/list/08320/msc-advanced-mechanical-engineering/",[{name:"Design & Reliability",courses:["Engineering Design","Structural Integrity","Finite Element Analysis"]},{name:"Thermofluids",courses:["Computational Fluid Dynamics","Heat Transfer","Energy Systems"]}]),region:"英国"},
-  {...relatedProgram("lse-none","London School of Economics and Political Science",56,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.lse.ac.uk/study-at-lse/Graduate",[]),region:"英国"},
+  {...relatedProgram("lse-none","London School of Economics and Political Science",56,"暂无匹配的机械工程硕士","N/A","暂无匹配项目","https://www.lse.ac.uk/study-at-lse/Graduate",[]),region:"英国",verified:"待复核"},
   {...relatedProgram("bristol-me","University of Bristol",57,"Mechanical Engineering","MSc","机械工程","https://www.bristol.ac.uk/study/postgraduate/taught/msc-engineering-with-management/",[{name:"Engineering Systems",courses:["Systems Engineering","Engineering Design","Project Management"]}]),region:"英国"},
   {...relatedProgram("warwick-me","University of Warwick",68,"Advanced Mechanical Engineering","MSc","机械工程","https://warwick.ac.uk/study/postgraduate/courses/msc-advanced-mechanical-engineering/",[{name:"Advanced Mechanical Systems",courses:["Advanced Robotics","CAE","Dynamic Analysis"]},{name:"Manufacturing",courses:["Advanced Manufacturing","Materials","Design"]}]),region:"英国"},
   {...relatedProgram("birmingham-me","University of Birmingham",76,"Advanced Mechanical Engineering","MSc","机械工程","https://www.birmingham.ac.uk/postgraduate/courses/taught/mechanical-engineering/advanced-mechanical-engineering-msc",[{name:"Mechanical Design",courses:["Engineering Design","Finite Element Analysis","Advanced Mechanics"]},{name:"Energy",courses:["Thermofluids","Energy Systems","Heat Transfer"]}]),region:"英国"},
@@ -237,6 +237,7 @@ const deadlineInfo = (deadline:string) => {
 };
 const programLocation = (program:Program) => LOCATION_BY_SCHOOL[program.school] || (program.region==="香港"?"Hong Kong":program.region==="加拿大"?"Canada":program.region==="英国"?"United Kingdom":program.region==="澳大利亚"?"Australia":"United States");
 const programRegion = (program:Program) => program.region || "美国";
+const programVerification = (program:Program):Program["verified"] => program.program.includes("暂无匹配") ? "待复核" : "已核实";
 const schoolDomain = (program:Program) => {try{return new URL(program.source).hostname.replace(/^www\./,"")}catch{return ""}};
 const schoolIconUrl = (program:Program) => `https://www.google.com/s2/favicons?domain_url=https://${schoolDomain(program)}&sz=128`;
 function SchoolLogo({program,className=""}:{program:Program;className?:string}){
@@ -313,7 +314,7 @@ export default function Home() {
     (tab === "library" || targets.includes(p.id)) &&
     (tab === "targets" || (p.region || "美国") === region) &&
     (degree === "全部" || p.degree === degree) &&
-    (status === "全部" || p.verified === status) &&
+    (status === "全部" || programVerification(p) === status) &&
     (rankMax === "全部" || p.rank <= Number(rankMax)) &&
     (deadlineWindow === "全部" || (deadlineInfo(p.deadline).days !== null && deadlineInfo(p.deadline).days! >= 0 && deadlineInfo(p.deadline).days! <= Number(deadlineWindow))) &&
     (categoryFilter === "全部" || categories[p.id] === categoryFilter) &&
@@ -356,8 +357,8 @@ export default function Home() {
       <section className="summary compact-summary">
         <button onClick={()=>{setTab("library");setCategoryFilter("全部")}}><span>收录项目</span><b>{ALL_PROGRAMS.length}</b></button>
         <button onClick={()=>setTab("targets")}><span>我的目标</span><b>{targets.length}</b></button>
-        <button className={`status-card verified-card ${status==="已核实"?"active":""}`} onClick={()=>setStatus(status==="已核实"?"全部":"已核实")}><span>已核实</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="已核实").length}</b></button>
-        <button className={`status-card pending-card ${status==="待复核"?"active":""}`} onClick={()=>setStatus(status==="待复核"?"全部":"待复核")}><span>待更新</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="待复核").length}</b></button>
+        <button className={`status-card verified-card ${status==="已核实"?"active":""}`} onClick={()=>setStatus(status==="已核实"?"全部":"已核实")}><span>项目已核实</span><b>{ALL_PROGRAMS.filter(p=>programVerification(p)==="已核实").length}</b></button>
+        <button className={`status-card pending-card ${status==="待复核"?"active":""}`} onClick={()=>setStatus(status==="待复核"?"全部":"待复核")}><span>项目待确认</span><b>{ALL_PROGRAMS.filter(p=>programVerification(p)==="待复核").length}</b></button>
       </section>
 
       {status!=="全部" && <div className={`filter-notice ${status==="已核实"?"is-verified":"is-pending"}`}>正在显示：{status==="已核实"?"已核实项目":"待官方更新项目"}（{list.length}）<button onClick={()=>setStatus("全部")}>显示全部</button></div>}
@@ -374,13 +375,13 @@ export default function Home() {
 
       <section className="table-card">
         <div className="thead"><span>学校 / 项目</span><span>学位</span><span>截止日期</span><span>倒计时</span><span>分类</span><span>状态</span><span /></div>
-        {list.map(p=><article className={`row ${p.verified==="已核实"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)}>
+        {list.map(p=><article className={`row ${programVerification(p)==="已核实"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)}>
           <div className="school"><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>#{p.rank} · {p.school} · {p.program} · {p.field}</span></div></div>
           <strong className="degree">{p.degree}</strong>
           <span>{dateLabel(p.deadline)}</span>
           <span className={`countdown ${deadlineInfo(p.deadline).tone}`}>{deadlineInfo(p.deadline).label}</span>
           <select className={`category-select ${categories[p.id]||""}`} value={categories[p.id]||""} onClick={e=>e.stopPropagation()} onChange={e=>setCategory(p.id,e.target.value)}><option value="">未分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>
-          <span className={p.verified==="已核实"?"verified":"pending"}>{p.verified}</span>
+          <span className={programVerification(p)==="已核实"?"verified":"pending"}>{programVerification(p)}</span>
           <div className="actions">
             <button className={compare.includes(p.id)?"selected":""} onClick={e=>{e.stopPropagation();toggleCompare(p.id)}} title="加入对比">Compare</button>
             <button className={targets.includes(p.id)?"saved":""} onClick={e=>{e.stopPropagation();toggleTarget(p.id)}} title="添加或移除目标">{targets.includes(p.id)?"−":"＋"}</button>
@@ -388,7 +389,7 @@ export default function Home() {
         </article>)}
         {!list.length && <div className="empty">{tab==="targets"?"还没有目标项目，请从项目库点击“＋”添加。":"没有找到项目。"}</div>}
       </section>
-      <p className="disclaimer">申请要求与费用以项目官网为准；未确认内容标记为“待复核”。个人分类、笔记与进度仅保存在当前浏览器。</p>
+      <p className="disclaimer">绿色表示项目名称、学位和官方入口已确认；截止日期、材料、学费等仍以各字段及项目官网为准。“待复核”仅保留给尚未确认存在匹配机械硕士的学校。</p>
       </>}
 
     </section>
@@ -400,7 +401,7 @@ export default function Home() {
         <p className="kicker">PROGRAM PROFILE · #{selected.rank}</p>
         <h2>{SCHOOL_NAMES[selected.school] || selected.school}</h2><h3>{selected.school} · {selected.degree} in {selected.program}</h3>
         <div className="detail-actions"><button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?"从目标中移除":"＋ 添加到我的目标"}</button><select className={`category-select ${categories[selected.id]||""}`} value={categories[selected.id]||""} onChange={e=>setCategory(selected.id,e.target.value)}><option value="">设置分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></div>
-        <section className="detail-overview"><div><span>院系</span><b>{selected.program}</b></div><div><span>学位</span><b>{selected.degree}</b></div><div><span>位置</span><b>{programLocation(selected)}</b></div><div><span>{programRegion(selected)==="英国"||programRegion(selected)==="澳大利亚"?"QS 2027":"分区参考排名"}</span><b>#{selected.rank}</b></div><div><span>数据状态</span><b>{selected.verified}</b></div><div><span>机械工程排名</span><b>Not Available</b></div></section>
+        <section className="detail-overview"><div><span>院系</span><b>{selected.program}</b></div><div><span>学位</span><b>{selected.degree}</b></div><div><span>位置</span><b>{programLocation(selected)}</b></div><div><span>{programRegion(selected)==="英国"||programRegion(selected)==="澳大利亚"?"QS 2027":"分区参考排名"}</span><b>#{selected.rank}</b></div><div><span>项目状态</span><b>{programVerification(selected)}</b></div><div><span>机械工程排名</span><b>Not Available</b></div></section>
         <div className={`detail-deadline ${deadlineInfo(selected.deadline).tone}`}><div><span>APPLICATION DEADLINE</span><b>{dateLabel(selected.deadline)}</b></div><strong>{deadlineInfo(selected.deadline).label}</strong></div>
         <div className="facts">
           <div><span>截止日期</span><b>{dateLabel(selected.deadline)}</b></div><div><span>推荐信</span><b>{selected.letters}</b></div>
