@@ -122,6 +122,7 @@ export default function Home() {
   const [tab,setTab] = useState<"library"|"targets">("library");
   const [query,setQuery] = useState("");
   const [degree,setDegree] = useState("全部");
+  const [status,setStatus] = useState<"全部"|"已核实"|"待复核">("全部");
   const [targets,setTargets] = useState<string[]>([]);
   const [selected,setSelected] = useState<Program | null>(null);
   const [compare,setCompare] = useState<string[]>([]);
@@ -137,8 +138,9 @@ export default function Home() {
   const list = useMemo(() => ALL_PROGRAMS.filter(p =>
     (tab === "library" || targets.includes(p.id)) &&
     (degree === "全部" || p.degree === degree) &&
+    (status === "全部" || p.verified === status) &&
     `${p.school}${SCHOOL_NAMES[p.school] || ""}${p.program}${p.degree}${p.field}`.toLowerCase().includes(query.toLowerCase())
-  ),[tab,targets,degree,query]);
+  ),[tab,targets,degree,status,query]);
 
   const toggleTarget = (id:string) => setTargets(old => old.includes(id) ? old.filter(x=>x!==id) : [...old,id]);
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
@@ -162,9 +164,11 @@ export default function Home() {
       <section className="summary">
         <div><span>收录项目</span><b>{ALL_PROGRAMS.length}</b></div>
         <div><span>目标项目</span><b>{targets.length}</b></div>
-        <div><span>已核实</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="已核实").length}</b></div>
-        <div><span>待官方更新</span><b>{ALL_PROGRAMS.filter(p=>p.deadline==="待公布").length}</b></div>
+        <button className={`status-card verified-card ${status==="已核实"?"active":""}`} onClick={()=>setStatus(status==="已核实"?"全部":"已核实")} aria-pressed={status==="已核实"}><span>已核实 · 点击筛选</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="已核实").length}</b></button>
+        <button className={`status-card pending-card ${status==="待复核"?"active":""}`} onClick={()=>setStatus(status==="待复核"?"全部":"待复核")} aria-pressed={status==="待复核"}><span>待官方更新 · 点击筛选</span><b>{ALL_PROGRAMS.filter(p=>p.verified==="待复核").length}</b></button>
       </section>
+
+      {status!=="全部" && <div className={`filter-notice ${status==="已核实"?"is-verified":"is-pending"}`}>正在显示：{status==="已核实"?"已核实项目":"待官方更新项目"}（{list.length}）<button onClick={()=>setStatus("全部")}>显示全部</button></div>}
 
       <div className="toolbar">
         <label><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索学校、专业或方向" /></label>
@@ -173,7 +177,7 @@ export default function Home() {
 
       <section className="table-card">
         <div className="thead"><span>学校 / 项目</span><span>学位</span><span>申请截止</span><span>推荐信</span><span>材料</span><span>状态</span><span /></div>
-        {list.map(p=><article className="row" key={p.id} onClick={()=>setSelected(p)}>
+        {list.map(p=><article className={`row ${p.verified==="已核实"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)}>
           <div className="school"><i>{p.rank}</i><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school} · {p.program} · {p.field}</span></div></div>
           <strong className="degree">{p.degree}</strong>
           <span>{dateLabel(p.deadline)}</span>
