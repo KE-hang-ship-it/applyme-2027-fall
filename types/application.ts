@@ -1,0 +1,45 @@
+export type Region = "美国" | "香港" | "加拿大" | "英国" | "澳大利亚";
+export type VerificationStatus = "已核实" | "待复核";
+export type Category = "Favorite" | "Dream" | "Target" | "Safety" | "Priority";
+export type View = "dashboard" | "schools" | "favorites" | "mine";
+export type ThemeMode = "system" | "light" | "dark";
+export type ChatMessage = { role: "assistant" | "user"; text: string; source?: string };
+export type CalendarNote = { text: string; tag: string };
+export type CostProfile = { tuition: string; shared: string; privateRoom: string; note: string };
+
+export type ProgramTrack = { name: string; courses: string[] };
+
+export type Program = {
+  id: string;
+  school: string;
+  rank: number;
+  program: string;
+  degree: string;
+  region?: Region;
+  field: string;
+  deadline: string;
+  letters: string;
+  cv: string;
+  sop: string;
+  gre: string;
+  credits: string;
+  duration: string;
+  verified: VerificationStatus;
+  source: string;
+  tracks: ProgramTrack[];
+  departmentUrl?: string;
+  programUrl?: string;
+  applicationUrl?: string;
+  rankValue?: number;
+  rankSource?: string;
+  rankYear?: string;
+  rankType?: string;
+  rankUrl?: string;
+  regionalOrder?: number;
+  regionalOrderLabel?: string;
+  heroImage?: string;
+  heroAlt?: string;
+  schoolSummary?: string;
+  programSummary?: string;
+  bestFit?: string;
+};

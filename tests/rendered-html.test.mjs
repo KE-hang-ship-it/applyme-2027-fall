@@ -21,11 +21,13 @@ test("server-renders the ApplyME workspace", async () => {
 
 test("keeps verification, backup, ranking and link safety in source", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const types = await readFile(new URL("../types/application.ts", import.meta.url), "utf8");
+  const source = `${page}\n${types}`;
   assert.match(page, /programVerification\s*=\s*\(program:Program\).*program\.verified/);
   assert.match(page, /exportBackup/);
   assert.match(page, /importBackup/);
-  assert.match(page, /rankSource\?/);
-  assert.match(page, /departmentUrl\?/);
+  assert.match(source, /rankSource\?/);
+  assert.match(source, /departmentUrl\?/);
   assert.match(page, /rel="noreferrer noopener"/);
   assert.match(page, /document\.documentElement\.lang/);
 });

@@ -3,18 +3,9 @@
 /* eslint-disable react-hooks/set-state-in-effect, react/no-unescaped-entities */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-
-type Program = {
-  id: string; school: string; rank: number; program: string; degree: string;
-  region?: "美国"|"香港"|"加拿大"|"英国"|"澳大利亚";
-  field: string; deadline: string; letters: string; cv: string; sop: string;
-  gre: string; credits: string; duration: string; verified: "已核实" | "待复核";
-  source: string; tracks: { name: string; courses: string[] }[];
-  departmentUrl?: string; programUrl?: string; applicationUrl?: string;
-  rankValue?: number; rankSource?: string; rankYear?: string; rankType?: string; rankUrl?: string;
-  regionalOrder?: number; regionalOrderLabel?: string;
-  heroImage?: string; heroAlt?: string; schoolSummary?: string; programSummary?: string; bestFit?: string;
-};
+import { SchoolLogo } from "@/components/SchoolLogo";
+import { EmptyState } from "@/components/EmptyState";
+import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMode, View } from "@/types/application";
 
 const SCHOOL_NAMES: Record<string, string> = {
   "Princeton University":"普林斯顿大学", "Massachusetts Institute of Technology":"麻省理工学院",
@@ -45,7 +36,6 @@ const SCHOOL_NAMES: Record<string, string> = {
   "Adelaide University":"阿德莱德大学", "Australian National University":"澳大利亚国立大学", "University of Melbourne":"墨尔本大学", "Monash University":"莫纳什大学", "University of New South Wales":"新南威尔士大学", "University of Queensland":"昆士兰大学", "University of Sydney":"悉尼大学", "University of Western Australia":"西澳大学"
 };
 
-type CostProfile = { tuition:string; shared:string; privateRoom:string; note:string };
 const HIGH_COST = new Set(["Stanford University","Massachusetts Institute of Technology","Harvard University","Columbia University","University of California, Berkeley","University of California, Los Angeles","University of Southern California","New York University","Boston University","Northeastern University"]);
 const LOWER_COST = new Set(["University of Michigan–Ann Arbor","University of Notre Dame","University of Florida","University of Illinois Urbana-Champaign","University of Wisconsin–Madison","Ohio State University","Purdue University","University of Georgia","University of Rochester"]);
 const PRIVATE_SCHOOLS = new Set(["Princeton University","Massachusetts Institute of Technology","Harvard University","Stanford University","University of Pennsylvania","California Institute of Technology","Cornell University","Brown University","Columbia University","Duke University","Johns Hopkins University","Northwestern University","Rice University","Vanderbilt University","Carnegie Mellon University","University of Notre Dame","Washington University in St. Louis","University of Southern California","New York University","Tufts University","Boston University","Lehigh University","Northeastern University","University of Rochester"]);
@@ -247,11 +237,6 @@ const courseDescription = (course:string) => {
   return "该课程属于本方向的研究生课程模块，具体教学内容、学分、先修要求和开课学期请通过项目官网课程目录确认。";
 };
 
-type Category = "Favorite"|"Dream"|"Target"|"Safety"|"Priority";
-type View = "dashboard"|"schools"|"favorites"|"mine";
-type ChatMessage = {role:"assistant"|"user";text:string;source?:string};
-type CalendarNote = {text:string;tag:string};
-type ThemeMode="system"|"light"|"dark";
 const CALENDAR_TAGS=["prepare-materials","contact-recommender","submit-application","verify-website","exam","payment"] as const;
 const CALENDAR_TAG_LABELS={zh:{"prepare-materials":"准备材料","contact-recommender":"联系推荐人","submit-application":"提交申请","verify-website":"核对官网",exam:"考试安排",payment:"缴费"},en:{"prepare-materials":"Prepare materials","contact-recommender":"Contact recommender","submit-application":"Submit application","verify-website":"Verify website",exam:"Exam",payment:"Payment"}} as const;
 const LEGACY_CALENDAR_TAGS:Record<string,string>={"准备材料":"prepare-materials","联系推荐人":"contact-recommender","提交申请":"submit-application","核对官网":"verify-website","考试安排":"exam","缴费":"payment"};
@@ -291,12 +276,6 @@ const TRANSLATIONS={
   zh:{verified:"已核实",pending:"待复核",programs:"项目库",saved:"收藏分类",mine:"我的",dataManagement:"数据管理",dataHelp:"备份、恢复或清空当前浏览器中的个人申请数据。",exportBackup:"导出备份",importBackup:"导入备份",clearData:"清空所有个人数据",clearWarning:"此操作无法撤销，建议先导出备份。",rankingNote:"不同国家和地区可能使用不同排名体系。排名仅作为选校参考，不等同于机械工程专业排名、录取难度或就业结果。",fieldPending:"该字段仍需以官网更新为准",department:"院系官网",programWebsite:"项目官网",applicationPortal:"申请入口",schoolIntro:"学校与机械硕士简介",costTitle:"机械硕士费用参考",coursesTitle:"官网方向与课程整理",privateNotes:"私人笔记",viewCourse:"查看介绍",schoolComparison:"学校对比",applicationFee:"申请费",tuition:"机械硕士项目学费",livingCost:"生活费 / 合租",insurance:"保险",privateRoom:"独居预算",totalCost:"预计总成本",regionalOrder:"分区参考序号",rankingPending:"排名来源待补充",program:"院系",degree:"学位",location:"位置",overallRanking:"综合大学排名",viewRankingSource:"查看排名来源",programStatus:"项目状态",meRanking:"机械工程专业排名",noMeRanking:"暂无统一可靠数据",officialLinksNote:"仅显示已经确认的官方入口。",interfaceSettings:"界面设置",languageLabel:"语言",appearance:"外观",light:"浅色",dark:"深色",system:"跟随系统",expired:"已过期",toDo:"待处理",noReminders:"还没有日历备注",noRemindersHelp:"在“我的”日历中点击日期添加备注。",close:"关闭",reminder:"提醒",calendarPlaceholder:"例如：完成康奈尔 SOP 初稿",deleteNote:"删除备注",saveReminder:"保存提醒",schoolOverview:"学校简介",programHighlights:"项目特点",bestFit:"适合人群",heroAlt:"校园代表性建筑",addTarget:"添加到我的目标",removeTarget:"从目标中移除",setCategory:"设置分类"},
   en:{verified:"Verified",pending:"Needs review",programs:"Programs",saved:"Saved",mine:"My Workspace",dataManagement:"Data Management",dataHelp:"Back up, restore, or clear personal application data stored in this browser.",exportBackup:"Export Backup",importBackup:"Import Backup",clearData:"Clear Personal Data",clearWarning:"This cannot be undone. Export a backup first.",rankingNote:"Countries and regions may use different ranking systems. Rankings are only a school-selection reference and do not represent mechanical engineering strength, admission difficulty, or employment outcomes.",fieldPending:"Verify this field against the latest official update",department:"Department Website",programWebsite:"Program Website",applicationPortal:"Application Portal",schoolIntro:"School & Mechanical Master's Overview",costTitle:"Mechanical Master's Cost Guide",coursesTitle:"Official Directions & Courses",privateNotes:"Private Notes",viewCourse:"View details",schoolComparison:"School Comparison",applicationFee:"Application fee",tuition:"Mechanical master's tuition",livingCost:"Living cost / shared",insurance:"Insurance",privateRoom:"Private room budget",totalCost:"Estimated total cost",regionalOrder:"Regional reference order",rankingPending:"Ranking source pending",program:"Program",degree:"Degree",location:"Location",overallRanking:"Overall university ranking",viewRankingSource:"View ranking source",programStatus:"Program status",meRanking:"Mechanical engineering ranking",noMeRanking:"No consistent reliable dataset",officialLinksNote:"Only verified official links are shown.",interfaceSettings:"Interface Settings",languageLabel:"Language",appearance:"Appearance",light:"Light",dark:"Dark",system:"System",expired:"Expired",toDo:"To do",noReminders:"No calendar notes yet",noRemindersHelp:"Open My Workspace and select a date to add a note.",close:"Close",reminder:"Reminder",calendarPlaceholder:"Example: finish the first Cornell SOP draft",deleteNote:"Delete note",saveReminder:"Save reminder",schoolOverview:"University setting",programHighlights:"Program character",bestFit:"Who it suits",heroAlt:"signature campus setting",addTarget:"Add to my targets",removeTarget:"Remove from targets",setCategory:"Set category"}
 } as const;
-const schoolDomain = (program:Program) => {try{return new URL(program.source).hostname.replace(/^www\./,"")}catch{return ""}};
-const schoolIconUrl = (program:Program) => `https://www.google.com/s2/favicons?domain_url=https://${schoolDomain(program)}&sz=128`;
-function SchoolLogo({program,className=""}:{program:Program;className?:string}){
-  const label=(SCHOOL_NAMES[program.school]||program.school).slice(0,1);
-  return <span className={`school-logo ${className}`}><em>{label}</em><img src={schoolIconUrl(program)} alt={`${SCHOOL_NAMES[program.school]||program.school} 校徽`} onError={e=>{e.currentTarget.style.display="none"}} /></span>;
-}
 type Overview={zh:{school:string;program:string;fit:string};en:{school:string;program:string;fit:string}};
 const SCHOOL_OVERVIEWS:Record<string,Overview>={
   "uci-me":{zh:{school:"位于橙县尔湾，校园以开阔的环形布局和安静的学习环境著称；Samueli 工程学院强调跨学科研究与南加州产业连接。",program:"机械与航空航天工程研究生培养覆盖机器人与控制、热流体、能源、设计及先进制造，适合把课程与实验室方向结合规划。",fit:"适合希望进入南加州科技与工程行业，或用硕士阶段为机器人、控制、能源和后续研究打基础的申请者。"},en:{school:"Located in Irvine, Orange County, UCI combines a spacious campus with the Samueli School's interdisciplinary engineering culture and Southern California industry links.",program:"Graduate study in mechanical and aerospace engineering spans robotics and control, thermal-fluid sciences, energy, design, and advanced manufacturing.",fit:"A strong fit for students targeting Southern California engineering roles or building a foundation for robotics, controls, energy, and further research."}},
@@ -464,9 +443,9 @@ export default function Home() {
         <section className="command-overview"><div><span>APPLICATION COMMAND CENTER</span><h2>{en?"2027 Fall Application Hub":"2027 Fall 申请控制台"}</h2><p>{en?"Keep saved programs, material progress and reminders in one place.":"集中查看收藏项目、材料进度和近期提醒。"}</p></div><div className="command-metrics"><button onClick={()=>{setView("favorites");setTab("targets")}}><small>{en?"Saved Programs":"收藏项目"}</small><b>{targets.length}</b></button><button onClick={()=>setView("mine")}><small>{en?"Materials Done":"材料完成"}</small><b>{materialCompleted}/{Object.keys(materials).length}</b></button><button onClick={()=>setView("mine")}><small>{en?"Reminders":"日历提醒"}</small><b>{reminderNotes.length}</b></button></div></section>
         <section className="today-focus"><div><span className="eyebrow">TODAY'S FOCUS</span><h3>{en?`Start with: ${materialName(nextMaterial)}`:`今天先推进：${nextMaterial}`}</h3><p>{en?"Spend 30 minutes on a small draft and keep moving forward.":"用 30 分钟完成一个小版本，让申请准备持续向前。"}</p></div><div><button onClick={()=>{setMaterials(old=>({...old,[nextMaterial]:"准备中"}));setToast(`${nextMaterial} 已标记为准备中`)}}>{en?"Start":"开始处理"}</button><button onClick={()=>setView("mine")}>{en?"Open materials":"打开我的材料"}</button></div></section>
         <div className="dashboard-heading"><div><span className="eyebrow">MY APPLICATIONS</span><h2>{en?"Saved School Countdowns":"收藏学校倒计时"}</h2></div><button onClick={()=>{setView("favorites");setTab("targets")}}>{en?"Manage saved":"管理收藏"} →</button></div>
-        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>收藏学校暂时没有已公布的截止日期</b><span>从项目库收藏学校后，这里只显示你的学校倒计时。</span></div>}</div>
+        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<EmptyState title={en?"No published deadlines in saved programs":"收藏学校暂时没有已公布的截止日期"} description={en?"Save programs from the library to see only your own countdowns here.":"从项目库收藏学校后，这里只显示你的学校倒计时。"} actionLabel={en?"Browse programs":"浏览项目"} onAction={()=>setView("schools")}/>}</div>
         <div className="dashboard-heading reminder-heading"><div><span className="eyebrow">CALENDAR REMINDERS</span><h2>{en?"My Calendar Reminders":"我的日历提醒"}</h2></div><button onClick={()=>setView("mine")}>{en?"Open calendar":"打开日历"} →</button></div>
-        <div className="reminder-list">{reminderNotes.length?reminderNotes.map(([date,note])=><button key={date} className={date<todayKey?"is-past":""} onClick={()=>setView("mine")}><time>{date.slice(5).replace("-","/")}</time><span className="reminder-tag">{calendarTagLabel(note.tag)}</span><b>{note.text}</b><small className="reminder-state">{date<todayKey?t.expired:t.toDo}</small></button>):<div className="premium-empty"><b>{t.noReminders}</b><span>{t.noRemindersHelp}</span></div>}</div>
+        <div className="reminder-list">{reminderNotes.length?reminderNotes.map(([date,note])=><button key={date} className={date<todayKey?"is-past":""} onClick={()=>setView("mine")}><time>{date.slice(5).replace("-","/")}</time><span className="reminder-tag">{calendarTagLabel(note.tag)}</span><b>{note.text}</b><small className="reminder-state">{date<todayKey?t.expired:t.toDo}</small></button>):<EmptyState title={t.noReminders} description={t.noRemindersHelp} actionLabel={en?"Open calendar":"打开日历"} onAction={()=>setView("mine")}/>}</div>
       </section>}
 
       {view==="mine"&&<section className="mine-view">
