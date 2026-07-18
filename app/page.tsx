@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+/* eslint-disable react-hooks/set-state-in-effect, react/no-unescaped-entities */
+
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Program = {
   id: string; school: string; rank: number; program: string; degree: string;
@@ -8,6 +10,8 @@ type Program = {
   field: string; deadline: string; letters: string; cv: string; sop: string;
   gre: string; credits: string; duration: string; verified: "已核实" | "待复核";
   source: string; tracks: { name: string; courses: string[] }[];
+  departmentUrl?: string; programUrl?: string; applicationUrl?: string;
+  rankValue?: number; rankSource?: string; rankYear?: string; rankType?: string; rankUrl?: string;
 };
 
 const SCHOOL_NAMES: Record<string, string> = {
@@ -125,7 +129,7 @@ const PROGRAMS: Program[] = [
 
 const relatedProgram = (id:string, school:string, rank:number, program:string, degree:string, field:string, source:string, tracks:Program["tracks"]):Program => ({
   id, school, rank, program, degree, field, source, tracks, verified:"已核实", deadline:"待公布",
-  letters:"待复核", cv:"需要", sop:"需要", gre:"待复核", credits:"待复核", duration:"1–2年"
+  programUrl:source, rankValue:rank, letters:"待复核", cv:"需要", sop:"需要", gre:"待复核", credits:"待复核", duration:"1–2年"
 });
 
 const EXTRA_PROGRAMS: Program[] = [
@@ -252,7 +256,14 @@ const deadlineInfo = (deadline:string) => {
 };
 const programLocation = (program:Program) => LOCATION_BY_SCHOOL[program.school] || (program.region==="香港"?"Hong Kong":program.region==="加拿大"?"Canada":program.region==="英国"?"United Kingdom":program.region==="澳大利亚"?"Australia":"United States");
 const programRegion = (program:Program) => program.region || "美国";
-const programVerification = (program:Program):Program["verified"] => program.program.includes("暂无匹配") ? "待复核" : "已核实";
+const programVerification = (program:Program):Program["verified"] => program.verified;
+const needsFieldReview=(value:string)=>/待公布|待复核|待官网确认|Not Available/i.test(value);
+const rankingMeta=(program:Program)=>{const region=programRegion(program);const qs=region!=="美国";return {value:program.rankValue??program.rank,source:program.rankSource||(qs?"QS":"U.S. News"),year:program.rankYear||(qs?"2027":"2026"),type:program.rankType||(qs?"World University Rankings":"National Universities"),url:program.rankUrl};};
+
+const TRANSLATIONS={
+  zh:{verified:"已核实",pending:"待复核",programs:"项目库",saved:"收藏分类",mine:"我的",dataManagement:"数据管理",dataHelp:"备份、恢复或清空当前浏览器中的个人申请数据。",exportBackup:"导出备份",importBackup:"导入备份",clearData:"清空所有个人数据",clearWarning:"此操作无法撤销，建议先导出备份。",rankingNote:"不同国家和地区可能使用不同排名体系；排名仅作为选校参考，不等同于机械工程专业排名或录取难度。",fieldPending:"该字段仍需以官网更新为准",department:"院系官网",programWebsite:"项目官网",applicationPortal:"申请入口",schoolIntro:"学校与机械硕士简介",costTitle:"机械硕士费用参考",coursesTitle:"官网方向与课程整理",privateNotes:"私人笔记",viewCourse:"查看介绍",schoolComparison:"学校对比",applicationFee:"申请费",tuition:"机械硕士项目学费",livingCost:"生活费 / 合租",insurance:"保险",privateRoom:"独居预算",totalCost:"预计总成本"},
+  en:{verified:"Verified",pending:"Needs review",programs:"Programs",saved:"Saved",mine:"My Workspace",dataManagement:"Data Management",dataHelp:"Back up, restore, or clear personal application data stored in this browser.",exportBackup:"Export Backup",importBackup:"Import Backup",clearData:"Clear Personal Data",clearWarning:"This cannot be undone. Export a backup first.",rankingNote:"Countries and regions may use different ranking systems. Rankings are only a school-selection reference and do not represent mechanical engineering strength or admission difficulty.",fieldPending:"Verify this field against the latest official update",department:"Department Website",programWebsite:"Program Website",applicationPortal:"Application Portal",schoolIntro:"School & Mechanical Master's Overview",costTitle:"Mechanical Master's Cost Guide",coursesTitle:"Official Directions & Courses",privateNotes:"Private Notes",viewCourse:"View details",schoolComparison:"School Comparison",applicationFee:"Application fee",tuition:"Mechanical master's tuition",livingCost:"Living cost / shared",insurance:"Insurance",privateRoom:"Private room budget",totalCost:"Estimated total cost"}
+} as const;
 const schoolIntro=(program:Program)=>`${SCHOOL_NAMES[program.school]||program.school}位于 ${programLocation(program)}，当前收录的是 ${program.degree} ${program.program}。项目重点覆盖${program.tracks.length?program.tracks.map(track=>track.name).join("、"):"机械工程相关培养"}，适合希望继续深造机械设计、控制、制造、能源或交叉工程方向的申请者。网站仅整理机械工程硕士相关信息，最终课程与录取要求以院系官网为准。`;
 const schoolDomain = (program:Program) => {try{return new URL(program.source).hostname.replace(/^www\./,"")}catch{return ""}};
 const schoolIconUrl = (program:Program) => `https://www.google.com/s2/favicons?domain_url=https://${schoolDomain(program)}&sz=128`;
@@ -319,6 +330,7 @@ export default function Home() {
   const [calendarTag,setCalendarTag] = useState("准备材料");
   const [materials,setMaterials] = useState<Record<string,string>>({CV:"未开始",PS:"未开始",推荐信:"未开始",成绩单:"未开始",语言成绩:"未开始",GRE:"未开始",护照:"未开始"});
   const [toast,setToast] = useState("");
+  const backupInputRef=useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("me-targets");
@@ -338,7 +350,7 @@ export default function Home() {
   useEffect(()=>{if(ready)localStorage.setItem("me-calendar",JSON.stringify(calendarNotes))},[calendarNotes,ready]);
   useEffect(()=>{if(ready)localStorage.setItem("me-materials",JSON.stringify(materials))},[materials,ready]);
   useEffect(()=>{if(ready){localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"}},[dark,ready]);
-  useEffect(()=>{if(ready)localStorage.setItem("me-language",language)},[language,ready]);
+  useEffect(()=>{if(ready){localStorage.setItem("me-language",language);document.documentElement.lang=language==="en"?"en":"zh-CN"}},[language,ready]);
   useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(""),2600);return()=>clearTimeout(timer)},[toast]);
 
   const list = useMemo(() => ALL_PROGRAMS.filter(p =>
@@ -369,8 +381,13 @@ export default function Home() {
   const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const q=question.toLowerCase();let answer:{text:string;source?:string;programId?:string};if(q.includes("材料检查")||q.includes("材料进度")||q.includes("material check"))answer={text:en?`You have completed ${materialCompleted}/${Object.keys(materials).length} materials. I suggest working on ${materialName(nextMaterial)} next.`:`你的材料已完成 ${materialCompleted}/${Object.keys(materials).length}。建议下一步优先处理 ${nextMaterial}，完成后我会同步更新主页进度。`};else if(q.includes("今日")||q.includes("先做什么")||q.includes("today"))answer={text:en?`Start with ${materialName(nextMaterial)} today. Spend 30 minutes on one small draft instead of trying to finish everything at once.`:`今天先推进 ${nextMaterial}。建议用 30 分钟完成一个小版本，不追求一次写完。`};else if(q.includes("选校建议")||q.includes("school advice"))answer={text:en?`You currently have ${targets.length} saved mechanical master's programs. Check your reach, target and safer options, then compare course fit and total budget.`:`你当前收藏了 ${targets.length} 个机械硕士项目。建议按冲刺、目标、保底重新检查比例，并优先确认每个项目的课程匹配和总预算。`};else if((q.includes("预算")||q.includes("budget"))&&!ALL_PROGRAMS.some(p=>q.includes((SCHOOL_NAMES[p.school]||"").toLowerCase())))answer={text:en?"Split your budget into mechanical master's tuition, housing, insurance and daily expenses. Tell me a school and I can use the figures recorded here.":"预算建议分成机械硕士学费、住房、保险和日常生活四部分。告诉我具体学校，我会给出该项目当前记录的学费与住房参考。"};else answer=answerSchoolQuestion(question,assistantSchool);if(answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:kunify(answer.text),source:answer.source}]);setAssistantQuery("")};
   const askAssistant=()=>sendAssistantQuestion(assistantQuery);
   const en=language==="en";
+  const t=TRANSLATIONS[language];
+  const exportBackup=()=>{const payload={version:1,exportedAt:new Date().toISOString(),app:"ApplyME",data:{targets,categories,notes,calendarNotes,materials,language,theme:dark?"dark":"light"}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`applyme-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);setToast(en?"Backup exported":"备份已导出")};
+  const importBackup=async(file?:File)=>{if(!file)return;try{const parsed=JSON.parse(await file.text()) as {version?:unknown;app?:unknown;data?:unknown};if(parsed.version!==1||parsed.app!=="ApplyME"||!parsed.data||typeof parsed.data!=="object")throw new Error("format");const data=parsed.data as Record<string,unknown>;if(!Array.isArray(data.targets)||!data.categories||typeof data.categories!=="object"||!data.notes||typeof data.notes!=="object"||!data.calendarNotes||typeof data.calendarNotes!=="object"||!data.materials||typeof data.materials!=="object")throw new Error("fields");if(!window.confirm(en?"Importing will replace your current personal data. Continue?":"导入会覆盖当前个人数据，是否继续？"))return;setTargets(data.targets.filter((x):x is string=>typeof x==="string"));setCategories(data.categories as Record<string,Category>);setNotes(data.notes as Record<string,string>);setCalendarNotes(data.calendarNotes as Record<string,CalendarNote>);setMaterials(data.materials as Record<string,string>);if(data.language==="zh"||data.language==="en")setLanguage(data.language);if(data.theme==="dark"||data.theme==="light")setDark(data.theme==="dark");setToast(en?"Backup restored":"备份已恢复")}catch{setToast(en?"Invalid or damaged backup file":"备份文件无效或已损坏")}finally{if(backupInputRef.current)backupInputRef.current.value=""}};
+  const clearPersonalData=()=>{if(!window.confirm(en?"Clear all saved programs, categories, notes, reminders and material progress? This cannot be undone.":"确定清空收藏、分类、笔记、提醒和材料进度吗？此操作无法撤销。"))return;setTargets([]);setCategories({});setNotes({});setCalendarNotes({});setMaterials({CV:"未开始",PS:"未开始",推荐信:"未开始",成绩单:"未开始",语言成绩:"未开始",GRE:"未开始",护照:"未开始"});setToast(en?"Personal data cleared":"个人数据已清空")};
   const title=view==="dashboard"?"Dashboard":view==="favorites"?(en?"Saved & Categories":"收藏与分类"):view==="mine"?(en?"My Workspace":"我的"):(en?"Program Library":"项目库");
   const materialName=(name:string)=>en?({"推荐信":"Recommendation Letters","成绩单":"Transcript","语言成绩":"Language Test","护照":"Passport"} as Record<string,string>)[name]||name:name;
+  const categoryName=(value:string)=>en?({Favorite:"Saved",Dream:"Reach",Target:"Target",Safety:"Safer",Priority:"Priority"} as Record<string,string>)[value]||value:CATEGORY_LABELS[value as Category]||value;
 
   return <main className="app-shell" data-language={language}>
     <aside>
@@ -403,14 +420,15 @@ export default function Home() {
       {view==="mine"&&<section className="mine-view">
         <div className="mine-grid"><section className="calendar-card"><div className="calendar-head"><button onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1))}>←</button><h2>{en?`${calendarMonth.toLocaleString("en-US",{month:"long"})} ${calendarMonth.getFullYear()}`:`${calendarMonth.getFullYear()} 年 ${calendarMonth.getMonth()+1} 月`}</h2><button onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1))}>→</button></div><div className="calendar-week">{(en?["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]:["日","一","二","三","四","五","六"]).map(d=><span key={d}>{d}</span>)}</div><div className="calendar-grid">{monthDays.map((day,i)=>day?<button key={i} className={calendarNotes[dateKey(day)]?"has-note":""} onClick={()=>openCalendarDay(day)}><b>{day}</b>{calendarNotes[dateKey(day)]&&<><span>{calendarNotes[dateKey(day)].tag}</span><small>{calendarNotes[dateKey(day)].text}</small></>}</button>:<i key={i}/>)}</div></section>
         <section className="materials-card"><span className="eyebrow">APPLICATION MATERIALS</span><h2>{en?"My Application Materials":"我的申请材料"}</h2><p>{en?"Statuses are saved in this browser.":"状态只保存在当前浏览器。"}</p><div className="material-progress"><i style={{width:`${materialCompleted/Object.keys(materials).length*100}%`}}/><span>{materialCompleted} / {Object.keys(materials).length} {en?"completed":"已完成"}</span></div><div className="materials-list">{Object.entries(materials).map(([name,value])=><label className={`material-row ${value==="已完成"?"status-complete":value==="待修改"?"status-edit":value==="准备中"?"status-working":"status-not-started"}`} key={name}><b>{materialName(name)}</b><select className="material-status" value={value} onChange={e=>setMaterials(old=>({...old,[name]:e.target.value}))}><option value="未开始">{en?"Not started":"未开始"}</option><option value="准备中">{en?"In progress":"准备中"}</option><option value="待修改">{en?"Needs revision":"待修改"}</option><option value="已完成">{en?"Completed":"已完成"}</option></select></label>)}</div></section></div>
+        <section className="data-management" aria-labelledby="data-management-title"><div><span className="eyebrow">BACKUP & RESTORE</span><h2 id="data-management-title">{t.dataManagement}</h2><p>{t.dataHelp}</p></div><div className="data-actions"><button onClick={exportBackup}>{t.exportBackup}</button><button onClick={()=>backupInputRef.current?.click()}>{t.importBackup}</button><input ref={backupInputRef} type="file" accept="application/json,.json" hidden onChange={e=>void importBackup(e.target.files?.[0])}/><button className="danger-action" onClick={clearPersonalData}>{t.clearData}</button></div><small>{t.clearWarning}</small></section>
       </section>}
 
       {(view==="schools"||view==="favorites") && <>
       <section className="summary compact-summary">
         <button onClick={()=>{setTab("library");setCategoryFilter("全部")}}><span>{en?"Programs":"收录项目"}</span><b>{ALL_PROGRAMS.length}</b></button>
         <button onClick={()=>setTab("targets")}><span>{en?"My Targets":"我的目标"}</span><b>{targets.length}</b></button>
-        <button className={`status-card verified-card ${status==="已核实"?"active":""}`} onClick={()=>setStatus(status==="已核实"?"全部":"已核实")}><span>项目已核实</span><b>{ALL_PROGRAMS.filter(p=>programVerification(p)==="已核实").length}</b></button>
-        <button className={`status-card pending-card ${status==="待复核"?"active":""}`} onClick={()=>setStatus(status==="待复核"?"全部":"待复核")}><span>项目待确认</span><b>{ALL_PROGRAMS.filter(p=>programVerification(p)==="待复核").length}</b></button>
+        <button className={`status-card verified-card ${status==="已核实"?"active":""}`} onClick={()=>setStatus(status==="已核实"?"全部":"已核实")}><span>{en?"Verified programs":"项目已核实"}</span><b>{ALL_PROGRAMS.filter(p=>programVerification(p)==="已核实").length}</b></button>
+        <button className={`status-card pending-card ${status==="待复核"?"active":""}`} onClick={()=>setStatus(status==="待复核"?"全部":"待复核")}><span>{en?"Programs to review":"项目待确认"}</span><b>{ALL_PROGRAMS.filter(p=>programVerification(p)==="待复核").length}</b></button>
       </section>
 
       {status!=="全部" && <div className={`filter-notice ${status==="已核实"?"is-verified":"is-pending"}`}>正在显示：{status==="已核实"?"已核实项目":"待官方更新项目"}（{list.length}）<button onClick={()=>setStatus("全部")}>显示全部</button></div>}
@@ -418,7 +436,7 @@ export default function Home() {
       <div className="toolbar">
         <div className="region-tabs" aria-label="地区筛选">{(["全部","美国","香港","加拿大","英国","澳大利亚"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{en?({"全部":"All","美国":"USA","香港":"Hong Kong","加拿大":"Canada","英国":"UK","澳大利亚":"Australia"} as Record<string,string>)[r]:r}</button>)}</div>
         <select value={degree} onChange={e=>setDegree(e.target.value)}><option>全部</option><option>MS</option><option>MSc</option><option>MSc(Eng)</option><option>SM</option><option>ScM</option><option>MSE</option><option>MEng</option><option>MMechE</option></select>
-        <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value as Category|"全部")}><option value="全部">全部分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>
+        <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value as Category|"全部")}><option value="全部">{en?"All categories":"全部分类"}</option>{Object.keys(CATEGORY_LABELS).map(v=><option value={v} key={v}>{categoryName(v)}</option>)}</select>
         <select value={rankMax} onChange={e=>setRankMax(e.target.value)}><option value="全部">全部排名</option><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option></select>
         <select value={deadlineWindow} onChange={e=>setDeadlineWindow(e.target.value)}><option value="全部">全部截止时间</option><option value="30">30 天内</option><option value="60">60 天内</option><option value="90">90 天内</option></select>
         <button className={`filter-button ${filtersOpen?"active":""}`} onClick={()=>setFiltersOpen(v=>!v)}>{en?"Filters":"筛选"} {featureFilters.length?`· ${featureFilters.length}`:""}</button>
@@ -428,12 +446,12 @@ export default function Home() {
       <section className="table-card">
         <div className="thead"><span>{en?"School / Program":"学校 / 项目"}</span><span>{en?"Degree":"学位"}</span><span>{en?"Deadline":"截止日期"}</span><span>{en?"Countdown":"倒计时"}</span><span>{en?"Category":"分类"}</span><span>{en?"Status":"状态"}</span><span /></div>
         {list.map(p=><article className={`row ${programVerification(p)==="已核实"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)}>
-          <div className="school"><strong className="rank-number">#{String(p.rank).padStart(2,"0")}</strong><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school}</span><small>{p.program} · {p.field}</small></div></div>
+          <div className="school"><strong className="rank-number" title={`${rankingMeta(p).source} ${rankingMeta(p).year} · ${rankingMeta(p).type}`}>#{String(rankingMeta(p).value).padStart(2,"0")}</strong><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school}</span><small>{p.program} · {p.field}</small></div></div>
           <strong className="degree">{p.degree}</strong>
           <span>{dateLabel(p.deadline)}</span>
           <span className={`countdown ${deadlineInfo(p.deadline).tone}`}>{deadlineInfo(p.deadline).label}</span>
-          <select className={`category-select ${categories[p.id]||""}`} value={categories[p.id]||""} onClick={e=>e.stopPropagation()} onChange={e=>setCategory(p.id,e.target.value)}><option value="">未分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>
-          <span className={programVerification(p)==="已核实"?"verified":"pending"}>{programVerification(p)}</span>
+          <select className={`category-select ${categories[p.id]||""}`} value={categories[p.id]||""} onClick={e=>e.stopPropagation()} onChange={e=>setCategory(p.id,e.target.value)}><option value="">{en?"Uncategorized":"未分类"}</option>{Object.keys(CATEGORY_LABELS).map(v=><option value={v} key={v}>{categoryName(v)}</option>)}</select>
+          <span className={programVerification(p)==="已核实"?"verified":"pending"}>{programVerification(p)==="已核实"?t.verified:t.pending}</span>
           <div className="actions">
             <button className={compare.includes(p.id)?"selected":""} onClick={e=>{e.stopPropagation();toggleCompare(p.id)}} title="加入对比">Compare</button>
             <button className={targets.includes(p.id)?"saved":""} onClick={e=>{e.stopPropagation();toggleTarget(p.id)}} title="添加或移除目标">{targets.includes(p.id)?"−":"＋"}</button>
@@ -441,7 +459,7 @@ export default function Home() {
         </article>)}
         {!list.length && <div className="empty">{tab==="targets"?"还没有目标项目，请从项目库点击“＋”添加。":"没有找到项目。"}</div>}
       </section>
-      <p className="disclaimer">绿色表示项目名称、学位和官方入口已确认；截止日期、材料、学费等仍以各字段及项目官网为准。“待复核”仅保留给尚未确认存在匹配机械硕士的学校。</p>
+      <p className="disclaimer">{t.rankingNote}<br/>{en?"A verified program does not mean every deadline, test, recommendation or tuition field has been confirmed.":"项目已核实不代表截止日期、GRE、推荐信、学费等所有字段均已确认；请逐项查看提示并以官网为准。"}</p>
       </>}
 
     </section>
@@ -453,32 +471,32 @@ export default function Home() {
         <p className="kicker">PROGRAM PROFILE · #{selected.rank}</p>
         <h2>{SCHOOL_NAMES[selected.school] || selected.school}</h2><h3>{selected.school} · {selected.degree} in {selected.program}</h3>
         <div className="detail-actions"><button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?"从目标中移除":"＋ 添加到我的目标"}</button><select className={`category-select ${categories[selected.id]||""}`} value={categories[selected.id]||""} onChange={e=>setCategory(selected.id,e.target.value)}><option value="">设置分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></div>
-        <section className="detail-overview"><div><span>院系</span><b>{selected.program}</b></div><div><span>学位</span><b>{selected.degree}</b></div><div><span>位置</span><b>{programLocation(selected)}</b></div><div><span>{programRegion(selected)==="英国"||programRegion(selected)==="澳大利亚"?"QS 2027":"分区参考排名"}</span><b>#{selected.rank}</b></div><div><span>项目状态</span><b>{programVerification(selected)}</b></div><div><span>机械工程排名</span><b>Not Available</b></div></section>
+        <section className="detail-overview"><div><span>{en?"Program":"院系"}</span><b>{selected.program}</b></div><div><span>{en?"Degree":"学位"}</span><b>{selected.degree}</b></div><div><span>{en?"Location":"位置"}</span><b>{programLocation(selected)}</b></div><div className="ranking-detail"><span>{en?"Overall ranking":"综合大学排名"}</span><b>#{rankingMeta(selected).value}</b><small>{rankingMeta(selected).source} · {rankingMeta(selected).year}<br/>{rankingMeta(selected).type}</small>{rankingMeta(selected).url&&<a href={rankingMeta(selected).url} target="_blank" rel="noreferrer noopener">{en?"View ranking source":"查看排名来源"} ↗</a>}</div><div><span>{en?"Program status":"项目状态"}</span><b className={programVerification(selected)==="已核实"?"verified":"pending"}>{programVerification(selected)==="已核实"?t.verified:t.pending}</b></div><div><span>{en?"Mechanical engineering ranking":"机械工程专业排名"}</span><b>{en?"No consistent reliable dataset":"暂无统一可靠数据"}</b></div></section>
         <div className={`detail-deadline ${deadlineInfo(selected.deadline).tone}`}><div><span>APPLICATION DEADLINE</span><b>{dateLabel(selected.deadline)}</b></div><strong>{deadlineInfo(selected.deadline).label}</strong></div>
         <div className="facts">
-          <div><span>截止日期</span><b>{dateLabel(selected.deadline)}</b></div><div><span>推荐信</span><b>{selected.letters}</b></div>
-          <div><span>CV / Resume</span><b>{selected.cv}</b></div><div><span>SOP / PS</span><b>{selected.sop}</b></div>
-          <div><span>GRE</span><b>{selected.gre}</b></div><div><span>学分 / 时长</span><b>{selected.credits} · {selected.duration}</b></div>
+          <div className={needsFieldReview(selected.deadline)?"field-review":""}><span>{en?"Deadline":"截止日期"}</span><b>{dateLabel(selected.deadline)}</b>{needsFieldReview(selected.deadline)&&<small>{t.fieldPending}</small>}</div><div className={needsFieldReview(selected.letters)?"field-review":""}><span>{en?"Recommendations":"推荐信"}</span><b>{selected.letters}</b>{needsFieldReview(selected.letters)&&<small>{t.fieldPending}</small>}</div>
+          <div className={needsFieldReview(selected.cv)?"field-review":""}><span>CV / Resume</span><b>{selected.cv}</b>{needsFieldReview(selected.cv)&&<small>{t.fieldPending}</small>}</div><div className={needsFieldReview(selected.sop)?"field-review":""}><span>SOP / PS</span><b>{selected.sop}</b>{needsFieldReview(selected.sop)&&<small>{t.fieldPending}</small>}</div>
+          <div className={needsFieldReview(selected.gre)?"field-review":""}><span>GRE</span><b>{selected.gre}</b>{needsFieldReview(selected.gre)&&<small>{t.fieldPending}</small>}</div><div className={needsFieldReview(selected.credits)?"field-review":""}><span>{en?"Credits / Duration":"学分 / 时长"}</span><b>{selected.credits} · {selected.duration}</b>{needsFieldReview(selected.credits)&&<small>{t.fieldPending}</small>}</div>
         </div>
-        <section className="school-introduction"><p className="kicker">SCHOOL & PROGRAM</p><h4>学校与机械硕士简介</h4><p>{schoolIntro(selected)}</p><div>{selected.tracks.slice(0,3).map(track=><span key={track.name}>{track.name}</span>)}</div></section>
+        <section className="school-introduction"><p className="kicker">SCHOOL & PROGRAM</p><h4>{t.schoolIntro}</h4><p>{en?`${selected.school} is located in ${programLocation(selected)}. This workspace tracks its ${selected.degree} in ${selected.program}, with emphasis on ${selected.tracks.length?selected.tracks.map(track=>track.name).join(", "):"related mechanical engineering study"}. Confirm final curriculum and admission requirements on the official program page.`:schoolIntro(selected)}</p><div>{selected.tracks.slice(0,3).map(track=><span key={track.name}>{track.name}</span>)}</div></section>
         <section className="costs">
-          <p className="kicker">MECHANICAL MASTER'S COST</p><h4>机械硕士费用参考</h4>
+          <p className="kicker">MECHANICAL MASTER'S COST</p><h4>{t.costTitle}</h4>
           <div className="cost-grid">
-            <div><span>申请费</span><b>{APP_FEE_BY_REGION[programRegion(selected)]||"Not Available"}</b></div>
-            <div><span>机械硕士项目学费</span><b>{costFor(selected.school).tuition}</b></div>
-            <div><span>生活费 / 合租</span><b>{costFor(selected.school).shared}</b></div>
-            <div><span>保险</span><b>Not Available</b></div>
-            <div><span>独居预算</span><b>{costFor(selected.school).privateRoom}</b></div>
-            <div><span>预计总成本</span><b>Not Available</b></div>
+            <div><span>{t.applicationFee}</span><b>{APP_FEE_BY_REGION[programRegion(selected)]||"Not Available"}</b></div>
+            <div><span>{t.tuition}</span><b>{costFor(selected.school).tuition}</b></div>
+            <div><span>{t.livingCost}</span><b>{costFor(selected.school).shared}</b></div>
+            <div><span>{t.insurance}</span><b>Not Available</b></div>
+            <div><span>{t.privateRoom}</span><b>{costFor(selected.school).privateRoom}</b></div>
+            <div><span>{t.totalCost}</span><b>Not Available</b></div>
           </div>
           <p className="housing-note"><b>常见租房要求：</b>{costFor(selected.school).note}</p>
           <p className="budget-warning">这里只展示机械工程硕士项目费用；已找到可靠项目数据的使用较窄参考区间，其余明确标注待官网确认。</p>
         </section>
-        <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>官网方向与课程整理</h4>
-          {selected.tracks.map(t=><div className="track" key={t.name}><b>{t.name}</b><ul>{t.courses.map(c=><li key={c}><button onClick={()=>setSelectedCourse({course:c,track:t.name,program:selected})}>{c}<span>查看介绍</span></button></li>)}</ul></div>)}
+        <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>{t.coursesTitle}</h4>
+          {selected.tracks.map(track=><div className="track" key={track.name}><b>{track.name}</b><ul>{track.courses.map(c=><li key={c}><button onClick={()=>setSelectedCourse({course:c,track:track.name,program:selected})}>{c}<span>{t.viewCourse}</span></button></li>)}</ul></div>)}
         </div>
-        <section className="notes-section"><p className="kicker">PRIVATE NOTES · AUTO SAVED</p><h4>私人笔记</h4><textarea value={notes[selected.id]||""} onChange={e=>setNotes(old=>({...old,[selected.id]:e.target.value}))} placeholder="记录教授、研究方向、就业、天气、安全或个人想法…" /><span>仅保存在当前浏览器</span></section>
-        <div className="official-links"><a className="source source-button" href={selected.source} target="_blank" rel="noreferrer">Department Website ↗</a><a className="source secondary-link" href={selected.source} target="_blank" rel="noreferrer">Official Website ↗</a><a className="source secondary-link" href={selected.source} target="_blank" rel="noreferrer">Application Portal ↗</a></div>
+        <section className="notes-section"><p className="kicker">PRIVATE NOTES · AUTO SAVED</p><h4>{t.privateNotes}</h4><textarea value={notes[selected.id]||""} onChange={e=>setNotes(old=>({...old,[selected.id]:e.target.value}))} placeholder={en?"Record faculty, directions, outcomes, location or personal thoughts…":"记录教授、研究方向、就业、天气、安全或个人想法…"} /><span>{en?"Saved only in this browser":"仅保存在当前浏览器"}</span></section>
+        <div className="official-links">{selected.departmentUrl&&<a className="source secondary-link" href={selected.departmentUrl} target="_blank" rel="noreferrer noopener">{t.department} ↗</a>}{(selected.programUrl||selected.source)&&<a className="source source-button" href={selected.programUrl||selected.source} target="_blank" rel="noreferrer noopener">{t.programWebsite} ↗</a>}{selected.applicationUrl&&<a className="source secondary-link" href={selected.applicationUrl} target="_blank" rel="noreferrer noopener">{t.applicationPortal} ↗</a>}</div>
         <p className="last-updated">Last Updated · July 17, 2026</p>
         <p className="source-note">当前范围包括美国项目、香港八所 UGC 资助大学、加拿大四校、英国 QS 2027 世界前 100 院校及澳大利亚 Group of Eight。无对应机械工程硕士的学校明确标记为“暂无匹配项目”；课程与要求请以官方页面为最终依据。</p>
       </section>
