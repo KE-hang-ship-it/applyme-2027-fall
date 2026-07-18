@@ -1,20 +1,29 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const description =
+  "ApplyME is a graduate application workspace for researching, comparing, organizing, and tracking graduate school applications.";
+
 export const metadata: Metadata = {
-  title: "ApplyME｜机械工程硕士申请工作台",
-  description: "2027 Fall 机械工程硕士选校、截止日期、费用、材料与申请进度工作台。",
+  metadataBase: new URL("https://ke-hang-ship-it.github.io/applyme-2027-fall/"),
+  title: "ApplyME | 机械工程硕士申请",
+  description,
+  applicationName: "ApplyME",
+  manifest: "./manifest.webmanifest",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [{ url: "./brand/favicon-48.png", type: "image/png", sizes: "48x48" }],
+    shortcut: "./brand/favicon-48.png",
+    apple: [{ url: "./brand/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
+  },
+  openGraph: {
+    title: "ApplyME | 机械工程硕士申请",
+    description,
+    type: "website",
+    images: [{ url: "./brand/icon-512.png", width: 512, height: 512, alt: "ApplyME" }],
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN">
       <body>{children}</body>

@@ -384,7 +384,7 @@ export default function Home() {
   useEffect(()=>{if(ready)localStorage.setItem("me-materials",JSON.stringify(materials))},[materials,ready]);
   useEffect(()=>{if(ready){localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"}},[dark,ready]);
   useEffect(()=>{if(!ready)return;localStorage.setItem("me-theme-mode",themeMode);const media=window.matchMedia("(prefers-color-scheme: dark)"),apply=()=>setDark(themeMode==="system"?media.matches:themeMode==="dark");apply();media.addEventListener("change",apply);return()=>media.removeEventListener("change",apply)},[themeMode,ready]);
-  useEffect(()=>{if(ready){localStorage.setItem("me-language",language);document.documentElement.lang=language==="en"?"en":"zh-CN";document.title=language==="en"?"ApplyME | Mechanical Engineering Master's Workspace":"ApplyME｜机械工程硕士申请工作台"}},[language,ready]);
+  useEffect(()=>{if(ready){localStorage.setItem("me-language",language);document.documentElement.lang=language==="en"?"en":"zh-CN";document.title="ApplyME | 机械工程硕士申请"}},[language,ready]);
   useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(""),2600);return()=>clearTimeout(timer)},[toast]);
 
   const list = useMemo(() => ALL_PROGRAMS.filter(p =>
@@ -424,8 +424,11 @@ export default function Home() {
   const categoryName=(value:string)=>en?({Favorite:"Saved",Dream:"Reach",Target:"Target",Safety:"Safer",Priority:"Priority"} as Record<string,string>)[value]||value:CATEGORY_LABELS[value as Category]||value;
 
   return <main className="app-shell" data-language={language}>
-    <aside>
-      <div className="logo"><b>APPLY</b><span>ME</span></div>
+    <aside className="sidebar">
+      <a className="logo brand-link" href="./" aria-label={en?"ApplyME home":"返回 ApplyME 首页"} onClick={event=>{event.preventDefault();setView("dashboard");setSelected(null);window.scrollTo({top:0,behavior:"smooth"})}}>
+        <img className="brand-logo-desktop" src="./brand/applyme-horizontal.png" alt="ApplyME — Plan smarter. Apply better."/>
+        <img className="brand-logo-mobile" src="./brand/applyme-icon-dark.png" alt="ApplyME"/>
+      </a>
       <nav className="primary-nav">
         <button className={view==="dashboard"?"active":""} onClick={()=>setView("dashboard")}><span>⌂</span> Dashboard</button>
         <button className={view==="schools"?"active":""} onClick={()=>{setView("schools");setTab("library")}}><span>◇</span> {en?"Programs":"项目库"} <small>{ALL_PROGRAMS.length}</small></button>
@@ -433,7 +436,7 @@ export default function Home() {
         <button className={view==="mine"?"active":""} onClick={()=>setView("mine")}><span>◎</span> {en?"My Workspace":"我的"}</button>
       </nav>
       <section className="interface-settings desktop-settings" aria-label={t.interfaceSettings}><b>⚙ {t.interfaceSettings}</b><div><span>{t.languageLabel}</span><div className="setting-options"><button className={language==="zh"?"active":""} onClick={()=>setLanguage("zh")}>中文</button><button className={language==="en"?"active":""} onClick={()=>setLanguage("en")}>EN</button></div></div><div><span>{t.appearance}</span><div className="setting-options"><button className={themeMode==="light"?"active":""} onClick={()=>setThemeMode("light")}>{t.light}</button><button className={themeMode==="dark"?"active":""} onClick={()=>setThemeMode("dark")}>{t.dark}</button><button className={themeMode==="system"?"active":""} onClick={()=>setThemeMode("system")}>{t.system}</button></div></div></section>
-      <div className="side-note"><b>2027 FALL</b><p>{en?"Mechanical Engineering Master's Applications":"机械工程硕士申请"}</p><span>{en?"Saved in this browser":"数据保存在当前浏览器"}</span></div>
+      <div className="side-note"><img className="brand-footer-mark" src="./brand/applyme-icon-monochrome.png" alt="" aria-hidden="true"/><div><b>2027 FALL</b><p>{en?"Mechanical Engineering Master's Applications":"机械工程硕士申请"}</p><span>{en?"Saved in this browser":"数据保存在当前浏览器"}</span></div></div>
     </aside>
 
     <section className={`page page-${view}`}>

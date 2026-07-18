@@ -19,6 +19,20 @@ test("server-renders the ApplyME workspace", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
 
+test("uses the responsive ApplyME brand and app metadata", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const manifest = await readFile(new URL("../app/manifest.ts", import.meta.url), "utf8");
+  assert.match(page, /brand\/applyme-horizontal\.png/);
+  assert.match(page, /brand\/applyme-icon-dark\.png/);
+  assert.match(page, /brand\/applyme-icon-monochrome\.png/);
+  assert.match(layout, /ApplyME \| 机械工程硕士申请/);
+  assert.match(layout, /brand\/favicon-48\.png/);
+  assert.match(layout, /brand\/apple-touch-icon\.png/);
+  assert.match(manifest, /brand\/icon-192\.png/);
+  assert.match(manifest, /brand\/icon-512\.png/);
+});
+
 test("keeps verification, backup, ranking and link safety in source", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const types = await readFile(new URL("../types/application.ts", import.meta.url), "utf8");
