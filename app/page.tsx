@@ -224,6 +224,7 @@ type Category = "Favorite"|"Dream"|"Target"|"Safety"|"Priority";
 type View = "dashboard"|"schools"|"favorites"|"mine";
 type ChatMessage = {role:"assistant"|"user";text:string;source?:string};
 type CalendarNote = {text:string;tag:string};
+const getLocalDateKey=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`};
 const CATEGORY_LABELS: Record<Category,string> = {Favorite:"收藏",Dream:"梦校",Target:"目标",Safety:"保底",Priority:"优先"};
 const LOCATION_BY_SCHOOL: Record<string,string> = {
   "Stanford University":"Stanford, California", "Massachusetts Institute of Technology":"Cambridge, Massachusetts",
@@ -354,7 +355,8 @@ export default function Home() {
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
   const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
   const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>targets.includes(p.id)&&deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,6),[targets]);
-  const reminderNotes=useMemo(()=>Object.entries(calendarNotes).filter(([date])=>date>=new Date().toISOString().slice(0,10)).sort(([a],[b])=>a.localeCompare(b)).slice(0,5),[calendarNotes]);
+  const todayKey=getLocalDateKey();
+  const reminderNotes=useMemo(()=>Object.entries(calendarNotes).sort(([a],[b])=>{const aPast=a<todayKey,bPast=b<todayKey;if(aPast!==bPast)return aPast?1:-1;return aPast?b.localeCompare(a):a.localeCompare(b)}).slice(0,6),[calendarNotes,todayKey]);
   const materialCompleted=Object.values(materials).filter(value=>value==="已完成").length;
   const nextMaterial=Object.entries(materials).find(([,value])=>value!=="已完成")?.[0]||"全部材料";
   const monthDays=useMemo(()=>{const y=calendarMonth.getFullYear(),m=calendarMonth.getMonth(),first=new Date(y,m,1).getDay(),count=new Date(y,m+1,0).getDate();return [...Array(first).fill(null),...Array.from({length:count},(_,i)=>i+1)]},[calendarMonth]);
@@ -390,7 +392,7 @@ export default function Home() {
         <div className="dashboard-heading"><div><span className="eyebrow">MY APPLICATIONS</span><h2>收藏学校倒计时</h2></div><button onClick={()=>{setView("favorites");setTab("targets")}}>管理收藏 →</button></div>
         <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>收藏学校暂时没有已公布的截止日期</b><span>从项目库收藏学校后，这里只显示你的学校倒计时。</span></div>}</div>
         <div className="dashboard-heading reminder-heading"><div><span className="eyebrow">CALENDAR REMINDERS</span><h2>我的日历提醒</h2></div><button onClick={()=>setView("mine")}>打开日历 →</button></div>
-        <div className="reminder-list">{reminderNotes.length?reminderNotes.map(([date,note])=><button key={date} onClick={()=>setView("mine")}><time>{date.slice(5).replace("-","/")}</time><span className="reminder-tag">{note.tag}</span><b>{note.text}</b></button>):<div className="premium-empty"><b>还没有未来提醒</b><span>在“我的”日历中点击日期添加备注。</span></div>}</div>
+        <div className="reminder-list">{reminderNotes.length?reminderNotes.map(([date,note])=><button key={date} className={date<todayKey?"is-past":""} onClick={()=>setView("mine")}><time>{date.slice(5).replace("-","/")}</time><span className="reminder-tag">{note.tag}</span><b>{note.text}</b><small className="reminder-state">{date<todayKey?"已过期":"待处理"}</small></button>):<div className="premium-empty"><b>还没有日历备注</b><span>在“我的”日历中点击日期添加备注。</span></div>}</div>
       </section>}
 
       {view==="mine"&&<section className="mine-view">
