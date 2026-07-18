@@ -66,7 +66,7 @@ const PROGRAMS: Program[] = [
     {name:"Controls & Robotics",courses:["Experimental Robotics","Introduction to Robotics","Decision Making under Uncertainty"]},
     {name:"Design & Manufacturing",courses:["Product Design","Smart Product Design","Design for Additive Manufacturing"]},
     {name:"Thermofluids",courses:["Fluid Mechanics","Heat Transfer","Energy Systems"]}]},
-  { id:"mit-me", school:"Massachusetts Institute of Technology", rank:2, program:"Mechanical Engineering", degree:"SM", field:"机械工程", deadline:"待公布", letters:"至少3封", cv:"需要", sop:"需要", gre:"待复核", credits:"研究型培养", duration:"约2年", verified:"待复核", source:"https://meche.mit.edu/education/prospective-students/graduate", tracks:[
+  { id:"mit-me", school:"Massachusetts Institute of Technology", rank:2, program:"Mechanical Engineering", degree:"SM", field:"机械工程", deadline:"2026-12-15", letters:"至少3封", cv:"需要", sop:"Statement of Objectives", gre:"不要求（2N/2N6 除外）", credits:"研究型培养", duration:"约2年", verified:"已核实", source:"https://meche.mit.edu/education/prospective-students/graduate/apply", tracks:[
     {name:"Mechanics",courses:["Advanced Mechanics of Solids","Continuum Mechanics","Finite Element Analysis"]},
     {name:"Robotics & Control",courses:["Underactuated Robotics","Feedback Control","Robotic Manipulation"]},
     {name:"Energy",courses:["Thermal Science","Energy Conversion","Fluid Dynamics"]}]},
@@ -74,7 +74,7 @@ const PROGRAMS: Program[] = [
     {name:"Robotics & Mechatronics",courses:["Math for Robotics","Linear Systems Theory","Mechatronic Systems Design"]},
     {name:"Automotive",courses:["Vehicle Dynamics","Automotive Engineering","Powertrain Systems"]},
     {name:"Design & Manufacturing",courses:["Design Optimization","Advanced Manufacturing","Product Design"]}]},
-  { id:"cmu-me", school:"Carnegie Mellon University", rank:21, program:"Mechanical Engineering", degree:"MS", field:"机械工程", deadline:"待公布", letters:"待复核", cv:"需要", sop:"需要", gre:"待复核", credits:"待复核", duration:"3–4学期", verified:"待复核", source:"https://www.meche.engineering.cmu.edu/education/graduate-programs/index.html", tracks:[
+  { id:"cmu-me", school:"Carnegie Mellon University", rank:21, program:"Mechanical Engineering", degree:"MS", field:"机械工程", deadline:"2027-01-05", letters:"3封", cv:"需要", sop:"MS 项目不要求 SOP", gre:"不接受", credits:"待复核", duration:"3–4学期", verified:"已核实", source:"https://www.meche.engineering.cmu.edu/education/graduate-programs/admission/index.html", tracks:[
     {name:"Advanced Study",courses:["Engineering Computation","Advanced Controls","Finite Element Methods"]},
     {name:"Research",courses:["Graduate Research","Advanced Mechanical Systems","Technical Electives"]}]},
   { id:"cornell-me", school:"Cornell University", rank:11, program:"Mechanical Engineering", degree:"MEng", field:"机械工程", deadline:"待公布", letters:"待复核", cv:"需要", sop:"需要", gre:"待复核", credits:"30 credits", duration:"1年", verified:"待复核", source:"https://www.mae.cornell.edu/mae/programs/graduate-programs/master-engineering-program", tracks:[
@@ -208,8 +208,9 @@ const courseDescription = (course:string) => {
 };
 
 type Category = "Favorite"|"Dream"|"Target"|"Safety"|"Priority";
-type View = "dashboard"|"schools"|"favorites";
+type View = "dashboard"|"schools"|"favorites"|"mine";
 type ChatMessage = {role:"assistant"|"user";text:string;source?:string};
+type CalendarNote = {text:string;tag:string};
 const CATEGORY_LABELS: Record<Category,string> = {Favorite:"收藏",Dream:"梦校",Target:"目标",Safety:"保底",Priority:"优先"};
 const LOCATION_BY_SCHOOL: Record<string,string> = {
   "Stanford University":"Stanford, California", "Massachusetts Institute of Technology":"Cambridge, Massachusetts",
@@ -275,7 +276,7 @@ export default function Home() {
   const [tab,setTab] = useState<"library"|"targets">("library");
   const [query,setQuery] = useState("");
   const [degree,setDegree] = useState("全部");
-  const [region,setRegion] = useState<"美国"|"香港"|"加拿大"|"英国"|"澳大利亚">("美国");
+  const [region,setRegion] = useState<"全部"|"美国"|"香港"|"加拿大"|"英国"|"澳大利亚">("美国");
   const [status,setStatus] = useState<"全部"|"已核实"|"待复核">("全部");
   const [targets,setTargets] = useState<string[]>([]);
   const [selected,setSelected] = useState<Program | null>(null);
@@ -295,12 +296,20 @@ export default function Home() {
   const [assistantQuery,setAssistantQuery] = useState("");
   const [messages,setMessages] = useState<ChatMessage[]>([{role:"assistant",text:"你好，我是坤械助手。可以问我学校、申请要求、费用、截止日期或课程。"}]);
   const [assistantSchool,setAssistantSchool] = useState<string>();
+  const [calendarMonth,setCalendarMonth] = useState(()=>new Date(2026,6,1));
+  const [calendarNotes,setCalendarNotes] = useState<Record<string,CalendarNote>>({});
+  const [calendarDate,setCalendarDate] = useState("");
+  const [calendarText,setCalendarText] = useState("");
+  const [calendarTag,setCalendarTag] = useState("准备材料");
+  const [materials,setMaterials] = useState<Record<string,string>>({CV:"未开始",PS:"未开始",推荐信:"未开始",成绩单:"未开始",语言成绩:"未开始",GRE:"未开始",护照:"未开始"});
 
   useEffect(() => {
     const saved = localStorage.getItem("me-targets");
     if (saved) setTargets(JSON.parse(saved));
     const savedCategories=localStorage.getItem("me-categories"); if(savedCategories)setCategories(JSON.parse(savedCategories));
     const savedNotes=localStorage.getItem("me-notes"); if(savedNotes)setNotes(JSON.parse(savedNotes));
+    const savedCalendar=localStorage.getItem("me-calendar"); if(savedCalendar)setCalendarNotes(JSON.parse(savedCalendar));
+    const savedMaterials=localStorage.getItem("me-materials"); if(savedMaterials)setMaterials(JSON.parse(savedMaterials));
     localStorage.removeItem("me-trackers");
     const savedTheme=localStorage.getItem("me-theme"); setDark(savedTheme?savedTheme==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches);
     setReady(true);
@@ -308,11 +317,14 @@ export default function Home() {
   useEffect(() => { if (ready) localStorage.setItem("me-targets",JSON.stringify(targets)); },[targets,ready]);
   useEffect(()=>{if(ready)localStorage.setItem("me-categories",JSON.stringify(categories))},[categories,ready]);
   useEffect(()=>{if(ready)localStorage.setItem("me-notes",JSON.stringify(notes))},[notes,ready]);
+  useEffect(()=>{if(ready)localStorage.setItem("me-calendar",JSON.stringify(calendarNotes))},[calendarNotes,ready]);
+  useEffect(()=>{if(ready)localStorage.setItem("me-materials",JSON.stringify(materials))},[materials,ready]);
   useEffect(()=>{if(ready){localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"}},[dark,ready]);
 
   const list = useMemo(() => ALL_PROGRAMS.filter(p =>
+    (view !== "favorites" || targets.includes(p.id)) &&
     (tab === "library" || targets.includes(p.id)) &&
-    (tab === "targets" || (p.region || "美国") === region) &&
+    (tab === "targets" || region === "全部" || (p.region || "美国") === region) &&
     (degree === "全部" || p.degree === degree) &&
     (status === "全部" || programVerification(p) === status) &&
     (rankMax === "全部" || p.rank <= Number(rankMax)) &&
@@ -320,15 +332,20 @@ export default function Home() {
     (categoryFilter === "全部" || categories[p.id] === categoryFilter) &&
     featureFilters.every(feature=>`${p.field} ${p.program} ${p.tracks.map(t=>`${t.name} ${t.courses.join(" ")}`).join(" ")}`.toLowerCase().includes(feature.toLowerCase().replace(/s$/,""))) &&
     `${p.school}${SCHOOL_NAMES[p.school] || ""}${p.program}${p.degree}${p.field}${programLocation(p)}`.toLowerCase().includes(query.toLowerCase())
-  ),[tab,targets,degree,status,region,query,categoryFilter,categories,featureFilters,rankMax,deadlineWindow]);
+  ).sort((a,b)=>a.rank-b.rank || a.school.localeCompare(b.school)),[view,tab,targets,degree,status,region,query,categoryFilter,categories,featureFilters,rankMax,deadlineWindow]);
 
   const toggleTarget = (id:string) => setTargets(old => old.includes(id) ? old.filter(x=>x!==id) : [...old,id]);
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
   const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
-  const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,8),[]);
+  const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>targets.includes(p.id)&&deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,6),[targets]);
+  const reminderNotes=useMemo(()=>Object.entries(calendarNotes).filter(([date])=>date>=new Date().toISOString().slice(0,10)).sort(([a],[b])=>a.localeCompare(b)).slice(0,5),[calendarNotes]);
+  const monthDays=useMemo(()=>{const y=calendarMonth.getFullYear(),m=calendarMonth.getMonth(),first=new Date(y,m,1).getDay(),count=new Date(y,m+1,0).getDate();return [...Array(first).fill(null),...Array.from({length:count},(_,i)=>i+1)]},[calendarMonth]);
+  const dateKey=(day:number)=>`${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+  const openCalendarDay=(day:number)=>{const key=dateKey(day),note=calendarNotes[key];setCalendarDate(key);setCalendarText(note?.text||"");setCalendarTag(note?.tag||"准备材料")};
+  const saveCalendarNote=()=>{if(!calendarDate)return;setCalendarNotes(old=>{const next={...old};if(calendarText.trim())next[calendarDate]={text:calendarText.trim(),tag:calendarTag};else delete next[calendarDate];return next});setCalendarDate("")};
   const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const answer=answerSchoolQuestion(question,assistantSchool);if("programId" in answer&&answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:kunify(answer.text),source:"source" in answer?answer.source:undefined}]);setAssistantQuery("")};
   const askAssistant=()=>sendAssistantQuestion(assistantQuery);
-  const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":"项目库";
+  const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":view==="mine"?"我的":"项目库";
 
   return <main className="app-shell">
     <aside>
@@ -336,7 +353,8 @@ export default function Home() {
       <nav className="primary-nav">
         <button className={view==="dashboard"?"active":""} onClick={()=>setView("dashboard")}><span>⌂</span> Dashboard</button>
         <button className={view==="schools"?"active":""} onClick={()=>{setView("schools");setTab("library")}}><span>◇</span> 项目库 <small>{ALL_PROGRAMS.length}</small></button>
-        <button className={view==="favorites"?"active":""} onClick={()=>setView("favorites")}><span>☆</span> 收藏分类 <small>{Object.keys(categories).length}</small></button>
+        <button className={view==="favorites"?"active":""} onClick={()=>{setView("favorites");setTab("targets")}}><span>☆</span> 收藏分类 <small>{targets.length}</small></button>
+        <button className={view==="mine"?"active":""} onClick={()=>setView("mine")}><span>◎</span> 我的</button>
       </nav>
       <button className="theme-toggle" onClick={()=>setDark(v=>!v)} aria-label="切换深色模式"><span>{dark?"☀":"◐"}</span>{dark?"浅色模式":"深色模式"}</button>
       <div className="side-note"><b>2027 FALL</b><p>机械工程硕士申请</p><span>数据保存在当前浏览器</span></div>
@@ -349,8 +367,15 @@ export default function Home() {
       </header>
 
       {view==="dashboard" && <section className="dashboard-view">
-        <div className="dashboard-heading"><div><span className="eyebrow">UPCOMING DEADLINES</span><h2>即将截止</h2></div><button onClick={()=>setView("schools")}>查看全部项目 →</button></div>
-        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>暂无已公布的临近截止日期</b><span>项目公布 2027 Fall 截止日期后会自动按剩余天数排序。</span></div>}</div>
+        <div className="dashboard-heading"><div><span className="eyebrow">MY APPLICATIONS</span><h2>收藏学校倒计时</h2></div><button onClick={()=>{setView("favorites");setTab("targets")}}>管理收藏 →</button></div>
+        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>收藏学校暂时没有已公布的截止日期</b><span>从项目库收藏学校后，这里只显示你的学校倒计时。</span></div>}</div>
+        <div className="dashboard-heading reminder-heading"><div><span className="eyebrow">CALENDAR REMINDERS</span><h2>我的日历提醒</h2></div><button onClick={()=>setView("mine")}>打开日历 →</button></div>
+        <div className="reminder-list">{reminderNotes.length?reminderNotes.map(([date,note])=><button key={date} onClick={()=>setView("mine")}><time>{date.slice(5).replace("-","/")}</time><span className="reminder-tag">{note.tag}</span><b>{note.text}</b></button>):<div className="premium-empty"><b>还没有未来提醒</b><span>在“我的”日历中点击日期添加备注。</span></div>}</div>
+      </section>}
+
+      {view==="mine"&&<section className="mine-view">
+        <div className="mine-grid"><section className="calendar-card"><div className="calendar-head"><button onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1))}>←</button><h2>{calendarMonth.getFullYear()} 年 {calendarMonth.getMonth()+1} 月</h2><button onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1))}>→</button></div><div className="calendar-week">{["日","一","二","三","四","五","六"].map(d=><span key={d}>{d}</span>)}</div><div className="calendar-grid">{monthDays.map((day,i)=>day?<button key={i} className={calendarNotes[dateKey(day)]?"has-note":""} onClick={()=>openCalendarDay(day)}><b>{day}</b>{calendarNotes[dateKey(day)]&&<><span>{calendarNotes[dateKey(day)].tag}</span><small>{calendarNotes[dateKey(day)].text}</small></>}</button>:<i key={i}/>)}</div></section>
+        <section className="materials-card"><span className="eyebrow">APPLICATION MATERIALS</span><h2>我的申请材料</h2><p>状态只保存在当前浏览器。</p><div className="materials-list">{Object.entries(materials).map(([name,value])=><label key={name}><b>{name}</b><select value={value} onChange={e=>setMaterials(old=>({...old,[name]:e.target.value}))}><option>未开始</option><option>准备中</option><option>待修改</option><option>已完成</option></select></label>)}</div></section></div>
       </section>}
 
       {(view==="schools"||view==="favorites") && <>
@@ -364,7 +389,7 @@ export default function Home() {
       {status!=="全部" && <div className={`filter-notice ${status==="已核实"?"is-verified":"is-pending"}`}>正在显示：{status==="已核实"?"已核实项目":"待官方更新项目"}（{list.length}）<button onClick={()=>setStatus("全部")}>显示全部</button></div>}
 
       <div className="toolbar">
-        <div className="region-tabs" aria-label="地区筛选">{(["美国","香港","加拿大","英国","澳大利亚"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{r}</button>)}</div>
+        <div className="region-tabs" aria-label="地区筛选">{(["全部","美国","香港","加拿大","英国","澳大利亚"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{r}</button>)}</div>
         <select value={degree} onChange={e=>setDegree(e.target.value)}><option>全部</option><option>MS</option><option>MSc</option><option>MSc(Eng)</option><option>SM</option><option>ScM</option><option>MSE</option><option>MEng</option><option>MMechE</option></select>
         <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value as Category|"全部")}><option value="全部">全部分类</option>{Object.entries(CATEGORY_LABELS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>
         <select value={rankMax} onChange={e=>setRankMax(e.target.value)}><option value="全部">全部排名</option><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option></select>
@@ -443,6 +468,8 @@ export default function Home() {
         <p className="source-note">中文内容为便于选校的概括，不替代官网原始课程说明。</p>
       </section>
     </div>}
+
+    {calendarDate&&<div className="course-overlay" onClick={()=>setCalendarDate("")}><section className="calendar-editor" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCalendarDate("")}>×</button><p className="kicker">CALENDAR NOTE</p><h3>{calendarDate} 提醒</h3><div className="quick-tags">{["准备材料","联系推荐人","提交申请","核对官网","考试安排","缴费"].map(tag=><button key={tag} className={calendarTag===tag?"active":""} onClick={()=>setCalendarTag(tag)}>{tag}</button>)}</div><textarea value={calendarText} onChange={e=>setCalendarText(e.target.value)} placeholder="例如：完成康奈尔 SOP 初稿" autoFocus/><div className="editor-actions"><button className="delete-note" onClick={()=>{setCalendarText("");setCalendarNotes(old=>{const next={...old};delete next[calendarDate];return next});setCalendarDate("")}}>删除备注</button><button className="save-note" onClick={saveCalendarNote}>保存提醒</button></div></section></div>}
 
     <button className={`assistant-launcher ${assistantOpen?"open":""}`} onClick={()=>setAssistantOpen(v=>!v)} aria-label="打开坤械助手"><img src="./kun-mech-assistant.png" alt="坤械助手"/><span><b>坤械助手</b><small>问学校问题</small></span></button>
     {assistantOpen&&<section className="assistant-panel" aria-label="坤械助手聊天窗口"><header><img src="./kun-mech-assistant.png" alt=""/><div><b>坤械助手</b><span>在线 · 支持连续追问</span></div><button onClick={()=>setAssistantOpen(false)}>×</button></header><div className="assistant-messages">{messages.map((m,i)=><div key={i} className={`assistant-message ${m.role}`}><p>{m.text}</p>{m.source&&<a href={m.source} target="_blank" rel="noreferrer">查看官方页面 ↗</a>}</div>)}</div><div className="assistant-suggestions">{["康奈尔大学学费","港科大有哪些方向","多伦多大学申请材料"].map(q=><button key={q} onClick={()=>sendAssistantQuestion(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();askAssistant()}}><input value={assistantQuery} onChange={e=>setAssistantQuery(e.target.value)} placeholder="输入学校和问题，也可以连续追问…" autoFocus/><button type="submit">发送</button></form><small className="assistant-note">回答来自当前网站数据，申请前请以官网为准。</small></section>}
