@@ -5,6 +5,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SchoolLogo } from "@/components/SchoolLogo";
 import { EmptyState } from "@/components/EmptyState";
+import { CompareButton } from "@/components/programs/CompareButton";
+import { RankingBadge } from "@/components/programs/RankingBadge";
+import { VerificationStatus } from "@/components/programs/VerificationStatus";
+import { getFieldVerification, overallVerification } from "@/lib/program-status";
+import { getTrustedRanking } from "@/lib/ranking-display";
 import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMode, View } from "@/types/application";
 
 const SCHOOL_NAMES: Record<string, string> = {
@@ -476,21 +481,22 @@ export default function Home() {
 
       <section className="table-card">
         <div className="thead"><span>{en?"School / Program":"学校 / 项目"}</span><span>{en?"Degree":"学位"}</span><span>{en?"Deadline":"截止日期"}</span><span>{en?"Countdown":"倒计时"}</span><span>{en?"Category":"分类"}</span><span>{en?"Status":"状态"}</span><span /></div>
-        {list.map(p=><article className={`row ${programVerification(p)==="已核实"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)}>
-          <div className="school"><strong className="rank-number" title={rankingMeta(p).isVerifiedRanking?`${rankingMeta(p).source} ${rankingMeta(p).year} · ${rankingMeta(p).type}`:t.regionalOrder}>#{String(rankingMeta(p).value).padStart(2,"0")}<small>{rankingMeta(p).isVerifiedRanking?rankingMeta(p).source:t.regionalOrder}</small></strong><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school}</span><small>{p.program} · {p.field}</small></div></div>
+        {list.map(p=><article className={`row ${overallVerification(p)==="verified"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)} tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelected(p)}}}>
+          <div className="school"><RankingBadge ranking={getTrustedRanking(p)} language={language} compact/><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school}</span><small>{p.program} · {p.field}</small></div></div>
           <strong className="degree">{p.degree}</strong>
           <span>{dateLabel(p.deadline)}</span>
           <span className={`countdown ${deadlineInfo(p.deadline).tone}`}>{deadlineInfo(p.deadline).label}</span>
           <select className={`category-select ${categories[p.id]||""}`} value={categories[p.id]||""} onClick={e=>e.stopPropagation()} onChange={e=>setCategory(p.id,e.target.value)}><option value="">{en?"Uncategorized":"未分类"}</option>{Object.keys(CATEGORY_LABELS).map(v=><option value={v} key={v}>{categoryName(v)}</option>)}</select>
-          <span className={programVerification(p)==="已核实"?"verified":"pending"}>{programVerification(p)==="已核实"?t.verified:t.pending}</span>
+          <span className={overallVerification(p)==="verified"?"verified":"pending"}>{overallVerification(p)==="verified"?t.verified:overallVerification(p)==="historical"?(en?"Historical":"历史参考"):t.pending}</span>
           <div className="actions">
-            <button className={compare.includes(p.id)?"selected":""} onClick={e=>{e.stopPropagation();toggleCompare(p.id)}} title="加入对比">Compare</button>
+            <CompareButton selected={compare.includes(p.id)} language={language} onToggle={()=>toggleCompare(p.id)} compact/>
             <button className={targets.includes(p.id)?"saved":""} onClick={e=>{e.stopPropagation();toggleTarget(p.id)}} title="添加或移除目标">{targets.includes(p.id)?"−":"＋"}</button>
           </div>
         </article>)}
         {!list.length && <div className="empty">{tab==="targets"?"还没有目标项目，请从项目库点击“＋”添加。":"没有找到项目。"}</div>}
       </section>
-      <p className="disclaimer">{t.rankingNote}<br/>{en?"A verified program does not mean every deadline, test, recommendation or tuition field has been confirmed.":"项目已核实不代表截止日期、GRE、推荐信、学费等所有字段均已确认；请逐项查看提示并以官网为准。"}</p>
+      <p className="disclaimer">{t.rankingNote}<br/>{en?"U.S. programs use verified U.S. News data when available; other regions use verified QS data. Unverified internal ordering is never shown as an official ranking.":"美国项目仅在有可靠来源时显示 U.S. News；其他地区仅在有可靠来源时显示 QS。内部排序不会作为官方排名展示。"}</p>
+      <div className="data-disclaimer" role="note">{en?"Application requirements, deadlines, tuition, rankings, and course offerings may change by application cycle. This website is intended for planning purposes only. Always verify the latest information on the official university website before applying.":"申请要求、截止日期、学费、排名和课程可能随申请周期变化。本网站仅用于规划；申请前请务必在大学官网核实最新信息。"}</div>
       </>}
 
     </section>
@@ -504,13 +510,13 @@ export default function Home() {
           <div className="hero-copy"><span className={programVerification(selected)==="已核实"?"verified":"pending"}>{programVerification(selected)==="已核实"?t.verified:t.pending}</span><p>{programLocation(selected)}</p><h2>{SCHOOL_NAMES[selected.school]||selected.school}</h2><h3>{selected.school}</h3><b>{selected.degree} · {selected.program}</b></div>
         </section>
         <div className="detail-body">
-        <div className="detail-actions"><button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?t.removeTarget:`＋ ${t.addTarget}`}</button><select aria-label={t.setCategory} className={`category-select ${categories[selected.id]||""}`} value={categories[selected.id]||""} onChange={e=>setCategory(selected.id,e.target.value)}><option value="">{t.setCategory}</option>{Object.entries(CATEGORY_LABELS).map(([v])=><option value={v} key={v}>{categoryName(v)}</option>)}</select><button className="compare-detail-button" onClick={()=>toggleCompare(selected.id)}>{compare.includes(selected.id)?(en?"Remove comparison":"移出对比"):(en?"Add to comparison":"加入对比")}</button></div>
-        <section className="detail-overview"><div><span>{t.program}</span><b>{selected.program}</b></div><div><span>{t.degree}</span><b>{selected.degree}</b></div><div><span>{t.location}</span><b>{programLocation(selected)}</b></div><div className="ranking-detail"><span>{rankingMeta(selected).isVerifiedRanking?t.overallRanking:t.regionalOrder}</span><b>#{rankingMeta(selected).value}</b>{rankingMeta(selected).isVerifiedRanking?<><small>{rankingMeta(selected).source} · {rankingMeta(selected).year}<br/>{rankingMeta(selected).type}</small>{rankingMeta(selected).url&&<a href={rankingMeta(selected).url} target="_blank" rel="noreferrer noopener">{t.viewRankingSource} ↗</a>}</>:<small>{t.rankingPending}</small>}</div><div><span>{t.programStatus}</span><b className={programVerification(selected)==="已核实"?"verified":"pending"}>{programVerification(selected)==="已核实"?t.verified:t.pending}</b></div><div><span>{t.meRanking}</span><b>{t.noMeRanking}</b></div></section>
+        <div className="detail-actions"><button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?t.removeTarget:`＋ ${t.addTarget}`}</button><select aria-label={t.setCategory} className={`category-select ${categories[selected.id]||""}`} value={categories[selected.id]||""} onChange={e=>setCategory(selected.id,e.target.value)}><option value="">{t.setCategory}</option>{Object.entries(CATEGORY_LABELS).map(([v])=><option value={v} key={v}>{categoryName(v)}</option>)}</select><CompareButton selected={compare.includes(selected.id)} language={language} onToggle={()=>toggleCompare(selected.id)}/></div>
+        <section className="detail-overview"><div><span>{t.program}</span><b>{selected.program}</b></div><div><span>{t.degree}</span><b>{selected.degree}</b></div><div><span>{t.location}</span><b>{programLocation(selected)}</b></div><div className="ranking-detail"><span>{t.overallRanking}</span><RankingBadge ranking={getTrustedRanking(selected)} language={language}/></div><div><span>{t.programStatus}</span><b className={overallVerification(selected)==="verified"?"verified":"pending"}>{overallVerification(selected)==="verified"?t.verified:overallVerification(selected)==="historical"?(en?"Historical reference":"历史参考"):t.pending}</b></div><div><span>{t.meRanking}</span><b>{t.noMeRanking}</b></div></section>
         <div className={`detail-deadline ${deadlineInfo(selected.deadline).tone}`}><div><span>APPLICATION DEADLINE</span><b>{dateLabel(selected.deadline)}</b></div><strong>{deadlineInfo(selected.deadline).label}</strong></div>
         <div className="facts">
-          <div className={needsFieldReview(selected.deadline)?"field-review":""}><span>{en?"Deadline":"截止日期"}</span><b>{dateLabel(selected.deadline)}</b>{needsFieldReview(selected.deadline)&&<small>{t.fieldPending}</small>}</div><div className={needsFieldReview(selected.letters)?"field-review":""}><span>{en?"Recommendations":"推荐信"}</span><b>{selected.letters}</b>{needsFieldReview(selected.letters)&&<small>{t.fieldPending}</small>}</div>
-          <div className={needsFieldReview(selected.cv)?"field-review":""}><span>CV / Resume</span><b>{selected.cv}</b>{needsFieldReview(selected.cv)&&<small>{t.fieldPending}</small>}</div><div className={needsFieldReview(selected.sop)?"field-review":""}><span>SOP / PS</span><b>{selected.sop}</b>{needsFieldReview(selected.sop)&&<small>{t.fieldPending}</small>}</div>
-          <div className={needsFieldReview(selected.gre)?"field-review":""}><span>GRE</span><b>{selected.gre}</b>{needsFieldReview(selected.gre)&&<small>{t.fieldPending}</small>}</div><div className={needsFieldReview(selected.credits)?"field-review":""}><span>{en?"Credits / Duration":"学分 / 时长"}</span><b>{selected.credits} · {selected.duration}</b>{needsFieldReview(selected.credits)&&<small>{t.fieldPending}</small>}</div>
+          <div className={needsFieldReview(selected.deadline)?"field-review":""}><span>{en?"Deadline":"截止日期"}</span><b>{dateLabel(selected.deadline)}</b><VerificationStatus verification={getFieldVerification(selected,"deadline")} language={language}/></div><div className={needsFieldReview(selected.letters)?"field-review":""}><span>{en?"Recommendations":"推荐信"}</span><b>{selected.letters||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"recommendations")} language={language}/></div>
+          <div className={needsFieldReview(selected.cv)?"field-review":""}><span>CV / Resume</span><b>{selected.cv||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"cv")} language={language}/></div><div className={needsFieldReview(selected.sop)?"field-review":""}><span>SOP / PS</span><b>{selected.sop||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"sop")} language={language}/></div>
+          <div className={needsFieldReview(selected.gre)?"field-review":""}><span>GRE</span><b>{selected.gre||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"gre")} language={language}/></div><div className={needsFieldReview(selected.credits)?"field-review":""}><span>{en?"Credits / Duration":"学分 / 时长"}</span><b>{selected.credits||t.fieldPending} · {selected.duration||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"credits")} language={language}/></div>
         </div>
         <section className="overview-section"><div className="section-heading"><p className="kicker">SCHOOL & PROGRAM</p><h4>{t.schoolIntro}</h4></div><div className="overview-grid"><article><span>01</span><h5>{t.schoolOverview}</h5><p>{getOverview(selected,language).school}</p></article><article><span>02</span><h5>{t.programHighlights}</h5><p>{getOverview(selected,language).program}</p></article><article><span>03</span><h5>{t.bestFit}</h5><p>{getOverview(selected,language).fit}</p></article></div><small>{en?"Confirm final curriculum and admission requirements on the official program website.":"最终课程设置与申请要求请以项目官网为准。"}</small></section>
         <section className="costs">
@@ -524,10 +530,11 @@ export default function Home() {
             <div><span>{t.totalCost}</span><b>Not Available</b></div>
           </div>
           <p className="housing-note"><b>常见租房要求：</b>{costFor(selected.school).note}</p>
-          <p className="budget-warning">这里只展示机械工程硕士项目费用；已找到可靠项目数据的使用较窄参考区间，其余明确标注待官网确认。</p>
+          <p className="budget-warning"><span className="historical-badge">{en?"Historical / pending reference":"历史 / 待核实参考"}</span>{en?"Tuition and living-cost figures are planning references, not a bill. Currency, data year, billing basis, credits, duration, housing, and personal spending must be confirmed on official pages.":"学费与生活费仅为规划参考，并非正式账单。币种、数据年份、计费方式、学分、学制、住房和个人支出均需在官网确认。"}</p>
         </section>
         <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>{t.coursesTitle}</h4>
           {selected.tracks.map(track=><div className="track" key={track.name}><b>{track.name}</b><ul>{track.courses.map(c=><li key={c}><button onClick={()=>setSelectedCourse({course:c,track:track.name,program:selected})}>{c}<span>{t.viewCourse}</span></button></li>)}</ul></div>)}
+          <p className="context-disclaimer">{en?"Course availability and content may change by semester. Please verify the latest curriculum on the official university website.":"课程开设与内容可能随学期变化，请在大学官网核实最新培养方案。"}</p>
         </div>
         <div className="official-links" aria-label={t.officialLinksNote}>{selected.departmentUrl&&<a title={t.department} className="source secondary-link" href={selected.departmentUrl} target="_blank" rel="noreferrer noopener">{t.department} ↗</a>}{selected.programUrl&&<a title={t.programWebsite} className="source source-button" href={selected.programUrl} target="_blank" rel="noreferrer noopener">{t.programWebsite} ↗</a>}{selected.applicationUrl&&<a title={t.applicationPortal} className="source secondary-link" href={selected.applicationUrl} target="_blank" rel="noreferrer noopener">{t.applicationPortal} ↗</a>}<small>{t.officialLinksNote}</small></div>
         <section className="notes-section"><p className="kicker">PRIVATE NOTES · AUTO SAVED</p><h4>{t.privateNotes}</h4><textarea value={notes[selected.id]||""} onChange={e=>setNotes(old=>({...old,[selected.id]:e.target.value}))} placeholder={en?"Record faculty, directions, outcomes, location or personal thoughts…":"记录教授、研究方向、就业、天气、安全或个人想法…"} /><span>{en?"Saved only in this browser":"仅保存在当前浏览器"}</span></section>
@@ -545,7 +552,7 @@ export default function Home() {
         <p className="course-school">{SCHOOL_NAMES[selectedCourse.program.school] || selectedCourse.program.school} · {selectedCourse.track}</p>
         <div className="course-description"><span>课程内容导读</span><p>{courseDescription(selectedCourse.course)}</p></div>
         <div className="course-meta"><div><span>所属项目</span><b>{selectedCourse.program.degree} · {selectedCourse.program.program}</b></div><div><span>学分 / 先修课</span><b>请在当学年官方课程目录确认</b></div></div>
-        <a className="source source-button" href={selectedCourse.program.source} target="_blank" rel="noreferrer">前往官方项目与课程页面 ↗</a>
+        <a className="source source-button" href={selectedCourse.program.curriculumUrl||selectedCourse.program.programUrl||selectedCourse.program.source} target="_blank" rel="noopener noreferrer">{en?"Open official curriculum page":"前往官方项目与课程页面"} ↗</a>
         <p className="source-note">中文内容为便于选校的概括，不替代官网原始课程说明。</p>
       </section>
     </div>}

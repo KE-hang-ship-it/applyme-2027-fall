@@ -8,6 +8,29 @@ export type CalendarNote = { text: string; tag: string };
 export type CostProfile = { tuition: string; shared: string; privateRoom: string; note: string };
 
 export type ProgramTrack = { name: string; courses: string[] };
+export type Ranking = {
+  source: "US News" | "QS";
+  category: string;
+  year: number;
+  rank: number | null;
+  verified: boolean;
+  sourceUrl?: string;
+};
+export type VerificationState = "verified" | "pending" | "not-published" | "historical";
+export type FieldVerification = {
+  status: VerificationState;
+  lastVerifiedAt?: string;
+  sourceUrl?: string;
+  note?: string;
+};
+export type VerificationField = "programWebsite" | "deadline" | "gre" | "recommendations" | "cv" | "sop" | "credits" | "tuition" | "language" | "applicationLink";
+export type TuitionReference = {
+  amount: string;
+  dataYear: string;
+  billingBasis: "program" | "academic-year" | "credit" | "unknown";
+  status: VerificationState;
+  sourceUrl?: string;
+};
 
 export type Program = {
   id: string;
@@ -42,4 +65,16 @@ export type Program = {
   schoolSummary?: string;
   programSummary?: string;
   bestFit?: string;
+  ranking?: Ranking;
+  verification?: Partial<Record<VerificationField, FieldVerification>>;
+  tuitionReference?: TuitionReference;
+  admissionRequirementsUrl?: string;
+  tuitionUrl?: string;
+  curriculumUrl?: string;
+  lastVerifiedAt?: string;
+  heroImageUrl?: string;
+  heroImageAlt?: string;
+  heroImageCredit?: string;
+  heroImageSourceUrl?: string;
+  heroImagePosition?: string;
 };

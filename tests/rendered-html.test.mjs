@@ -31,3 +31,11 @@ test("keeps verification, backup, ranking and link safety in source", async () =
   assert.match(page, /rel="noreferrer noopener"/);
   assert.match(page, /document\.documentElement\.lang/);
 });
+
+test("compare control is isolated from program-card navigation", async () => {
+  const compareButton = await readFile(new URL("../components/programs/CompareButton.tsx", import.meta.url), "utf8");
+  assert.match(compareButton, /aria-pressed/);
+  assert.match(compareButton, /onPointerDown/);
+  assert.match(compareButton, /stopPropagation/);
+  assert.match(compareButton, /type="button"/);
+});

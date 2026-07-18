@@ -19,11 +19,11 @@ type SchoolLogoProps = {
 
 export function SchoolLogo({ program, className = "" }: SchoolLogoProps) {
   return (
-    <span className={`school-logo ${className}`} aria-hidden="true">
+    <span className={`school-logo ${className}`} role="img" aria-label={`${program.school} logo`}>
       <em>{program.school.slice(0, 1)}</em>
       <img
         src={schoolIconUrl(program)}
-        alt=""
+        alt={`${program.school} logo`}
         loading="lazy"
         decoding="async"
         onError={(event) => {
