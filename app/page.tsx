@@ -339,6 +339,7 @@ export default function Home() {
   const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
   const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>targets.includes(p.id)&&deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,6),[targets]);
   const reminderNotes=useMemo(()=>Object.entries(calendarNotes).filter(([date])=>date>=new Date().toISOString().slice(0,10)).sort(([a],[b])=>a.localeCompare(b)).slice(0,5),[calendarNotes]);
+  const materialCompleted=Object.values(materials).filter(value=>value==="已完成").length;
   const monthDays=useMemo(()=>{const y=calendarMonth.getFullYear(),m=calendarMonth.getMonth(),first=new Date(y,m,1).getDay(),count=new Date(y,m+1,0).getDate();return [...Array(first).fill(null),...Array.from({length:count},(_,i)=>i+1)]},[calendarMonth]);
   const dateKey=(day:number)=>`${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
   const openCalendarDay=(day:number)=>{const key=dateKey(day),note=calendarNotes[key];setCalendarDate(key);setCalendarText(note?.text||"");setCalendarTag(note?.tag||"准备材料")};
@@ -367,6 +368,7 @@ export default function Home() {
       </header>
 
       {view==="dashboard" && <section className="dashboard-view">
+        <section className="command-overview"><div><span>APPLICATION COMMAND CENTER</span><h2>2027 Fall 申请控制台</h2><p>集中查看收藏项目、材料进度和近期提醒。</p></div><div className="command-metrics"><button onClick={()=>{setView("favorites");setTab("targets")}}><small>收藏项目</small><b>{targets.length}</b></button><button onClick={()=>setView("mine")}><small>材料完成</small><b>{materialCompleted}/{Object.keys(materials).length}</b></button><button onClick={()=>setView("mine")}><small>日历提醒</small><b>{reminderNotes.length}</b></button></div></section>
         <div className="dashboard-heading"><div><span className="eyebrow">MY APPLICATIONS</span><h2>收藏学校倒计时</h2></div><button onClick={()=>{setView("favorites");setTab("targets")}}>管理收藏 →</button></div>
         <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>收藏学校暂时没有已公布的截止日期</b><span>从项目库收藏学校后，这里只显示你的学校倒计时。</span></div>}</div>
         <div className="dashboard-heading reminder-heading"><div><span className="eyebrow">CALENDAR REMINDERS</span><h2>我的日历提醒</h2></div><button onClick={()=>setView("mine")}>打开日历 →</button></div>
@@ -375,7 +377,7 @@ export default function Home() {
 
       {view==="mine"&&<section className="mine-view">
         <div className="mine-grid"><section className="calendar-card"><div className="calendar-head"><button onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1))}>←</button><h2>{calendarMonth.getFullYear()} 年 {calendarMonth.getMonth()+1} 月</h2><button onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1))}>→</button></div><div className="calendar-week">{["日","一","二","三","四","五","六"].map(d=><span key={d}>{d}</span>)}</div><div className="calendar-grid">{monthDays.map((day,i)=>day?<button key={i} className={calendarNotes[dateKey(day)]?"has-note":""} onClick={()=>openCalendarDay(day)}><b>{day}</b>{calendarNotes[dateKey(day)]&&<><span>{calendarNotes[dateKey(day)].tag}</span><small>{calendarNotes[dateKey(day)].text}</small></>}</button>:<i key={i}/>)}</div></section>
-        <section className="materials-card"><span className="eyebrow">APPLICATION MATERIALS</span><h2>我的申请材料</h2><p>状态只保存在当前浏览器。</p><div className="materials-list">{Object.entries(materials).map(([name,value])=><label key={name}><b>{name}</b><select value={value} onChange={e=>setMaterials(old=>({...old,[name]:e.target.value}))}><option>未开始</option><option>准备中</option><option>待修改</option><option>已完成</option></select></label>)}</div></section></div>
+        <section className="materials-card"><span className="eyebrow">APPLICATION MATERIALS</span><h2>我的申请材料</h2><p>状态只保存在当前浏览器。</p><div className="material-progress"><i style={{width:`${materialCompleted/Object.keys(materials).length*100}%`}}/><span>{materialCompleted} / {Object.keys(materials).length} 已完成</span></div><div className="materials-list">{Object.entries(materials).map(([name,value])=><label key={name}><b>{name}</b><select className={`material-status ${value==="已完成"?"status-complete":value==="待修改"?"status-edit":value==="准备中"?"status-working":"status-not-started"}`} value={value} onChange={e=>setMaterials(old=>({...old,[name]:e.target.value}))}><option>未开始</option><option>准备中</option><option>待修改</option><option>已完成</option></select></label>)}</div></section></div>
       </section>}
 
       {(view==="schools"||view==="favorites") && <>
@@ -401,7 +403,7 @@ export default function Home() {
       <section className="table-card">
         <div className="thead"><span>学校 / 项目</span><span>学位</span><span>截止日期</span><span>倒计时</span><span>分类</span><span>状态</span><span /></div>
         {list.map(p=><article className={`row ${programVerification(p)==="已核实"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)}>
-          <div className="school"><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>#{p.rank} · {p.school} · {p.program} · {p.field}</span></div></div>
+          <div className="school"><strong className="rank-number">#{String(p.rank).padStart(2,"0")}</strong><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school}</span><small>{p.program} · {p.field}</small></div></div>
           <strong className="degree">{p.degree}</strong>
           <span>{dateLabel(p.deadline)}</span>
           <span className={`countdown ${deadlineInfo(p.deadline).tone}`}>{deadlineInfo(p.deadline).label}</span>
