@@ -424,9 +424,10 @@ export default function Home() {
   const categoryName=(value:string)=>en?({Favorite:"Saved",Dream:"Reach",Target:"Target",Safety:"Safer",Priority:"Priority"} as Record<string,string>)[value]||value:CATEGORY_LABELS[value as Category]||value;
 
   return <main className="app-shell" data-language={language}>
-    <aside className="sidebar">
+    <aside className="sidebar" style={{position:"fixed"}}>
       <a className="logo brand-link" href="./" aria-label={en?"ApplyME home":"返回 ApplyME 首页"} onClick={event=>{event.preventDefault();setView("dashboard");setSelected(null);window.scrollTo({top:0,behavior:"smooth"})}}>
-        <img className="brand-logo-desktop" src="./brand/applyme-horizontal.png" alt="ApplyME — Plan smarter. Apply better."/>
+        <img className="brand-logo-desktop" src="./brand/applyme-horizontal.png" alt="ApplyME — Plan smarter. Apply better." style={{display:dark?"none":undefined}}/>
+        <img className="brand-logo-desktop" src="./brand/applyme-horizontal-dark.png" alt="ApplyME — Plan smarter. Apply better." style={{display:dark?undefined:"none"}}/>
         <img className="brand-logo-mobile" src="./brand/applyme-icon-dark.png" alt="ApplyME"/>
       </a>
       <nav className="primary-nav">
@@ -439,7 +440,7 @@ export default function Home() {
       <div className="side-note"><img className="brand-footer-mark" src="./brand/applyme-icon-monochrome.png" alt="" aria-hidden="true"/><div><b>2027 FALL</b><p>{en?"Mechanical Engineering Master's Applications":"机械工程硕士申请"}</p><span>{en?"Saved in this browser":"数据保存在当前浏览器"}</span></div></div>
     </aside>
 
-    <section className={`page page-${view}`}>
+    <section className={`page page-${view}`} style={view==="dashboard"?{paddingTop:32}:undefined}>
       <header>
         <div><p>MASTER'S APPLICATION WORKSPACE</p><h1>{title}</h1></div>
         <div className="header-actions"><label className="global-search"><span>⌕</span><input value={query} onFocus={()=>setView("schools")} onChange={e=>{setQuery(e.target.value);setView("schools")}} placeholder={en?"Search school, program, city or state":"搜索学校、专业、城市或州"} /></label><div className="season">{en?"Intake":"申请季"} <b>2027 Fall</b></div></div>
