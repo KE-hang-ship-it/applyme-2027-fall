@@ -147,3 +147,36 @@ body,button,input,select,textarea{font-family:"Arial Rounded MT Bold","Microsoft
   .table-card{display:grid;gap:12px;background:transparent;border:0;box-shadow:none;overflow:visible}.thead{display:none}.row{display:grid!important;grid-template-columns:1fr auto!important;gap:10px 12px!important;min-height:0;padding:16px;border:1px solid var(--hairline);border-radius:18px;background:var(--surface)!important;box-shadow:0 7px 20px rgba(25,61,94,.06)}.row .school{grid-column:1/-1;align-items:flex-start}.school b{font-size:14px!important}.school span,.school small{display:block!important;font-size:12px!important;white-space:normal}.row>.degree,.row>span,.row>.category-select{display:block!important;font-size:12px}.row>.degree{grid-column:1}.row>.degree:before{content:"Degree · ";color:var(--subtle);font-weight:400}.row>span:nth-of-type(1):before{content:"Deadline · ";color:var(--subtle)}.row>.countdown:before{content:"Countdown · ";color:inherit}.row>.category-select{grid-column:1;min-height:40px}.row>span.verified,.row>span.pending{display:inline-flex!important;align-items:center;justify-self:end;padding:7px 10px}.actions{grid-column:1/-1;display:grid!important;grid-template-columns:1fr 48px;gap:8px}.actions button{min-height:44px;font-size:12px!important}.rank-number{display:block!important;width:auto;flex:0 0 auto;font-size:14px}
   .drawer{width:100%!important;max-width:none;padding:0 16px 110px!important}.close{width:46px!important;height:46px!important;font-size:25px}.detail-overview{grid-template-columns:1fr 1fr}.detail-overview>div,.facts>div,.cost-grid>div{padding:14px}.detail-overview span,.facts span,.cost-grid span{font-size:11px}.detail-overview b,.facts b,.cost-grid b{font-size:13px;overflow-wrap:anywhere}.official-links{display:grid}.official-links a{width:100%;text-align:center;overflow-wrap:anywhere}.notes-section textarea{min-height:180px;font-size:13px}.course-modal,.calendar-editor{max-height:calc(100vh - 24px);overflow:auto;padding:24px 18px}.compare-modal{width:calc(100vw - 12px);max-height:calc(100vh - 96px);overflow:auto;padding:24px 14px}.compare-modal:after{content:"Swipe horizontally to view →";display:block;position:sticky;left:0;margin-top:10px;color:var(--subtle);font-size:12px}.compare-table{overflow-x:auto}.calendar-grid>button,.calendar-grid>i{min-height:58px}.calendar-grid>button b{font-size:12px}.calendar-grid>button small{display:none}.data-management{grid-template-columns:1fr;padding:18px}.data-actions{display:grid;grid-template-columns:1fr 1fr;justify-content:stretch}.data-actions button{font-size:12px}.data-actions .danger-action{grid-column:1/-1}.data-management p{font-size:12px}.assistant-launcher{bottom:84px!important;right:10px!important}.assistant-launcher img{width:62px;height:62px}.assistant-panel{bottom:78px!important;height:calc(100vh - 88px)!important}.assistant-message p{font-size:13px}.compare-bar{bottom:82px!important;left:8px!important;right:88px!important;max-width:none}.compare-now{min-height:44px}.interaction-toast{bottom:92px!important}
 }
+
+/* Interface preferences: quiet desktop sidebar, in-context mobile controls */
+.interface-settings{display:grid;gap:9px;padding:12px;border:1px solid var(--hairline);border-radius:16px;background:color-mix(in srgb,var(--surface-2) 88%,transparent)}
+.desktop-settings{margin-top:auto;margin-bottom:14px}
+.mobile-settings{display:none}
+.settings-label{margin:0;color:var(--subtle);font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase}
+.setting-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.interface-settings>div:nth-of-type(1) .setting-options{grid-template-columns:repeat(2,1fr)}
+.setting-options button{min-height:34px;border:1px solid var(--hairline);border-radius:10px;background:var(--surface);color:var(--subtle);font-size:10px}
+.setting-options button.active{border-color:color-mix(in srgb,var(--accent) 55%,var(--hairline));background:var(--accent-soft);color:var(--accent);font-weight:700}
+.desktop-settings+.side-note{margin-top:0}
+
+/* Calm gray-blue dark theme: lower contrast and less saturated accents */
+:root[data-theme="dark"]{
+  --bg:#181b20;--surface:#20242a;--surface-2:#252a31;--surface-3:#2b3038;
+  --text:#d8dde4;--ink:#d8dde4;--subtle:#9ba4af;--muted:#9ba4af;
+  --hairline:#353c46;--line:#353c46;--accent:#86a4bd;--blue:#86a4bd;
+  --accent-soft:#283846;--shadow:0 12px 34px rgba(0,0,0,.22)
+}
+:root[data-theme="dark"] body,:root[data-theme="dark"] .page{background-color:var(--bg);color:var(--text)}
+:root[data-theme="dark"] aside,:root[data-theme="dark"] .table-card,:root[data-theme="dark"] .row,:root[data-theme="dark"] .drawer,:root[data-theme="dark"] .assistant-panel,:root[data-theme="dark"] .calendar-card,:root[data-theme="dark"] .materials-card,:root[data-theme="dark"] .data-management{background:var(--surface);color:var(--text);border-color:var(--hairline);box-shadow:var(--shadow)}
+:root[data-theme="dark"] .toolbar label,:root[data-theme="dark"] .toolbar select,:root[data-theme="dark"] .global-search,:root[data-theme="dark"] .season,:root[data-theme="dark"] .facts,:root[data-theme="dark"] .cost-grid div,:root[data-theme="dark"] .track li button,:root[data-theme="dark"] .calendar-grid>button,:root[data-theme="dark"] .material-row,:root[data-theme="dark"] .setting-options button{background:var(--surface-2);color:var(--text);border-color:var(--hairline)}
+:root[data-theme="dark"] .row:hover,:root[data-theme="dark"] .calendar-grid>button:hover{background:#292f37!important}
+:root[data-theme="dark"] .verified,:root[data-theme="dark"] .summary .verified-card{background:#263a33;color:#91b6a0}
+:root[data-theme="dark"] .pending,:root[data-theme="dark"] .summary .pending-card{background:#3b3526;color:#c7b37d}
+:root[data-theme="dark"] .row-verified{box-shadow:inset 3px 0 #688d78}:root[data-theme="dark"] .row-pending{box-shadow:inset 3px 0 #a18a51}
+:root[data-theme="dark"] .page:before,:root[data-theme="dark"] .mine-view:after{opacity:.42}
+:root[data-theme="dark"] .page-schools,:root[data-theme="dark"] .page-favorites,:root[data-theme="dark"] .page-dashboard{background-image:linear-gradient(rgba(134,164,189,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(134,164,189,.025) 1px,transparent 1px)}
+
+@media(max-width:700px){
+  .desktop-settings{display:none!important}.mobile-settings{display:grid;margin:0 0 16px;padding:16px}.mobile-settings .setting-options button{min-height:42px;font-size:12px}
+  .sidebar-tools{display:none!important}.header-actions{padding-right:0!important;width:100%}.global-search{width:100%}
+}
