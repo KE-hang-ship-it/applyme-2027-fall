@@ -47,14 +47,27 @@ const HONG_KONG_SCHOOLS = new Set(["The University of Hong Kong","The Chinese Un
 const CANADIAN_SCHOOLS = new Set(["University of Toronto","University of British Columbia","McGill University","University of Waterloo"]);
 const BRITISH_SCHOOLS = new Set(["Imperial College London","University of Oxford","University of Cambridge","University College London","University of Edinburgh","King's College London","University of Manchester","University of Bristol","London School of Economics and Political Science","University of Warwick","University of Birmingham","University of Glasgow","University of Leeds","University of Sheffield","Durham University","University of Nottingham"]);
 const AUSTRALIAN_SCHOOLS = new Set(["Adelaide University","Australian National University","University of Melbourne","Monash University","University of New South Wales","University of Queensland","University of Sydney","University of Western Australia"]);
+const ME_TUITION:Record<string,string>={
+  "Stanford University":"约 US$65,000–75,000 / 45-unit MS 项目",
+  "Massachusetts Institute of Technology":"约 US$64,000 / 学年（SM）",
+  "Carnegie Mellon University":"约 US$58,000–62,000 / MS 项目",
+  "Cornell University":"约 US$71,000–75,000 / MEng 项目",
+  "University of Waterloo":"约 C$38,000–45,000 / 16个月 MEng",
+  "The Hong Kong University of Science and Technology":"约 HK$210,000–250,000 / MSc 项目",
+  "Hong Kong Polytechnic University":"约 HK$240,000–260,000 / MSc 项目",
+  "Imperial College London":"约 £42,000–45,000 / MSc 项目",
+  "University College London":"约 £39,000–43,000 / MSc 项目",
+  "University of Melbourne":"约 A$55,000–60,000 / 学年",
+  "University of New South Wales":"约 A$54,000–59,000 / 学年"
+};
 const RENTAL_NOTE = "通常需护照/身份证明、录取或在读证明、押金与首月房租；没有当地信用记录时，可能需要担保人或预付数月房租。";
 const costFor = (school:string):CostProfile => {
-  if (HONG_KONG_SCHOOLS.has(school)) return {tuition:"约 HK$180,000–320,000/项目",shared:"约 HK$5,500–10,000/月",privateRoom:"约 HK$12,000–25,000/月",note:RENTAL_NOTE};
-  if (CANADIAN_SCHOOLS.has(school)) return {tuition:"约 C$25,000–70,000/学年（国际生）",shared:"约 C$900–1,800/月",privateRoom:"约 C$1,500–3,000/月",note:RENTAL_NOTE};
-  if (BRITISH_SCHOOLS.has(school)) return {tuition:"约 £28,000–45,000/项目（国际生）",shared:"约 £650–1,300/月",privateRoom:"约 £950–2,000/月",note:RENTAL_NOTE};
-  if (AUSTRALIAN_SCHOOLS.has(school)) return {tuition:"约 A$48,000–65,000/学年（国际生）",shared:"约 A$900–1,700/月",privateRoom:"约 A$1,500–2,800/月",note:RENTAL_NOTE};
+  if (HONG_KONG_SCHOOLS.has(school)) return {tuition:ME_TUITION[school]||"机械硕士学费待官网确认",shared:"约 HK$5,500–10,000/月",privateRoom:"约 HK$12,000–25,000/月",note:RENTAL_NOTE};
+  if (CANADIAN_SCHOOLS.has(school)) return {tuition:ME_TUITION[school]||"机械硕士学费待官网确认",shared:"约 C$900–1,800/月",privateRoom:"约 C$1,500–3,000/月",note:RENTAL_NOTE};
+  if (BRITISH_SCHOOLS.has(school)) return {tuition:ME_TUITION[school]||"机械硕士学费待官网确认",shared:"约 £650–1,300/月",privateRoom:"约 £950–2,000/月",note:RENTAL_NOTE};
+  if (AUSTRALIAN_SCHOOLS.has(school)) return {tuition:ME_TUITION[school]||"机械硕士学费待官网确认",shared:"约 A$900–1,700/月",privateRoom:"约 A$1,500–2,800/月",note:RENTAL_NOTE};
   return {
-    tuition:PRIVATE_SCHOOLS.has(school) ? "约 US$55,000–75,000/学年" : "约 US$30,000–60,000/学年（国际生）",
+    tuition:ME_TUITION[school]||"机械硕士学费待官网确认",
     shared:HIGH_COST.has(school) ? "约 US$1,000–1,800/月" : LOWER_COST.has(school) ? "约 US$600–1,000/月" : "约 US$750–1,300/月",
     privateRoom:HIGH_COST.has(school) ? "约 US$1,600–3,000/月" : LOWER_COST.has(school) ? "约 US$900–1,500/月" : "约 US$1,100–2,000/月",
     note:RENTAL_NOTE
@@ -239,6 +252,7 @@ const deadlineInfo = (deadline:string) => {
 const programLocation = (program:Program) => LOCATION_BY_SCHOOL[program.school] || (program.region==="香港"?"Hong Kong":program.region==="加拿大"?"Canada":program.region==="英国"?"United Kingdom":program.region==="澳大利亚"?"Australia":"United States");
 const programRegion = (program:Program) => program.region || "美国";
 const programVerification = (program:Program):Program["verified"] => program.program.includes("暂无匹配") ? "待复核" : "已核实";
+const schoolIntro=(program:Program)=>`${SCHOOL_NAMES[program.school]||program.school}位于 ${programLocation(program)}，当前收录的是 ${program.degree} ${program.program}。项目重点覆盖${program.tracks.length?program.tracks.map(track=>track.name).join("、"):"机械工程相关培养"}，适合希望继续深造机械设计、控制、制造、能源或交叉工程方向的申请者。网站仅整理机械工程硕士相关信息，最终课程与录取要求以院系官网为准。`;
 const schoolDomain = (program:Program) => {try{return new URL(program.source).hostname.replace(/^www\./,"")}catch{return ""}};
 const schoolIconUrl = (program:Program) => `https://www.google.com/s2/favicons?domain_url=https://${schoolDomain(program)}&sz=128`;
 function SchoolLogo({program,className=""}:{program:Program;className?:string}){
@@ -302,6 +316,7 @@ export default function Home() {
   const [calendarText,setCalendarText] = useState("");
   const [calendarTag,setCalendarTag] = useState("准备材料");
   const [materials,setMaterials] = useState<Record<string,string>>({CV:"未开始",PS:"未开始",推荐信:"未开始",成绩单:"未开始",语言成绩:"未开始",GRE:"未开始",护照:"未开始"});
+  const [toast,setToast] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("me-targets");
@@ -320,6 +335,7 @@ export default function Home() {
   useEffect(()=>{if(ready)localStorage.setItem("me-calendar",JSON.stringify(calendarNotes))},[calendarNotes,ready]);
   useEffect(()=>{if(ready)localStorage.setItem("me-materials",JSON.stringify(materials))},[materials,ready]);
   useEffect(()=>{if(ready){localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"}},[dark,ready]);
+  useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(""),2600);return()=>clearTimeout(timer)},[toast]);
 
   const list = useMemo(() => ALL_PROGRAMS.filter(p =>
     (view !== "favorites" || targets.includes(p.id)) &&
@@ -334,17 +350,18 @@ export default function Home() {
     `${p.school}${SCHOOL_NAMES[p.school] || ""}${p.program}${p.degree}${p.field}${programLocation(p)}`.toLowerCase().includes(query.toLowerCase())
   ).sort((a,b)=>a.rank-b.rank || a.school.localeCompare(b.school)),[view,tab,targets,degree,status,region,query,categoryFilter,categories,featureFilters,rankMax,deadlineWindow]);
 
-  const toggleTarget = (id:string) => setTargets(old => old.includes(id) ? old.filter(x=>x!==id) : [...old,id]);
+  const toggleTarget = (id:string) => setTargets(old => {const removing=old.includes(id),program=PROGRAM_BY_ID.get(id),name=program?SCHOOL_NAMES[program.school]||program.school:"该项目";setToast(removing?`已从收藏移除：${name}`:`已收藏：${name}`);return removing ? old.filter(x=>x!==id) : [...old,id]});
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
   const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
   const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>targets.includes(p.id)&&deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,6),[targets]);
   const reminderNotes=useMemo(()=>Object.entries(calendarNotes).filter(([date])=>date>=new Date().toISOString().slice(0,10)).sort(([a],[b])=>a.localeCompare(b)).slice(0,5),[calendarNotes]);
   const materialCompleted=Object.values(materials).filter(value=>value==="已完成").length;
+  const nextMaterial=Object.entries(materials).find(([,value])=>value!=="已完成")?.[0]||"全部材料";
   const monthDays=useMemo(()=>{const y=calendarMonth.getFullYear(),m=calendarMonth.getMonth(),first=new Date(y,m,1).getDay(),count=new Date(y,m+1,0).getDate();return [...Array(first).fill(null),...Array.from({length:count},(_,i)=>i+1)]},[calendarMonth]);
   const dateKey=(day:number)=>`${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
   const openCalendarDay=(day:number)=>{const key=dateKey(day),note=calendarNotes[key];setCalendarDate(key);setCalendarText(note?.text||"");setCalendarTag(note?.tag||"准备材料")};
   const saveCalendarNote=()=>{if(!calendarDate)return;setCalendarNotes(old=>{const next={...old};if(calendarText.trim())next[calendarDate]={text:calendarText.trim(),tag:calendarTag};else delete next[calendarDate];return next});setCalendarDate("")};
-  const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const answer=answerSchoolQuestion(question,assistantSchool);if("programId" in answer&&answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:kunify(answer.text),source:"source" in answer?answer.source:undefined}]);setAssistantQuery("")};
+  const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const q=question.toLowerCase();let answer:{text:string;source?:string;programId?:string};if(q.includes("材料检查")||q.includes("材料进度"))answer={text:`你的材料已完成 ${materialCompleted}/${Object.keys(materials).length}。建议下一步优先处理 ${nextMaterial}，完成后我会同步更新主页进度。`};else if(q.includes("今日")||q.includes("先做什么"))answer={text:`今天先推进 ${nextMaterial}。建议用 30 分钟完成一个小版本，不追求一次写完。`};else if(q.includes("选校建议"))answer={text:`你当前收藏了 ${targets.length} 个机械硕士项目。建议按冲刺、目标、保底重新检查比例，并优先确认每个项目的课程匹配和总预算。`};else if(q.includes("预算")&&!ALL_PROGRAMS.some(p=>q.includes((SCHOOL_NAMES[p.school]||"").toLowerCase())))answer={text:"预算建议分成机械硕士学费、住房、保险和日常生活四部分。告诉我具体学校，我会给出该项目当前记录的学费与住房参考。"};else answer=answerSchoolQuestion(question,assistantSchool);if(answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:kunify(answer.text),source:answer.source}]);setAssistantQuery("")};
   const askAssistant=()=>sendAssistantQuestion(assistantQuery);
   const title=view==="dashboard"?"Dashboard":view==="favorites"?"收藏与分类":view==="mine"?"我的":"项目库";
 
@@ -369,6 +386,7 @@ export default function Home() {
 
       {view==="dashboard" && <section className="dashboard-view">
         <section className="command-overview"><div><span>APPLICATION COMMAND CENTER</span><h2>2027 Fall 申请控制台</h2><p>集中查看收藏项目、材料进度和近期提醒。</p></div><div className="command-metrics"><button onClick={()=>{setView("favorites");setTab("targets")}}><small>收藏项目</small><b>{targets.length}</b></button><button onClick={()=>setView("mine")}><small>材料完成</small><b>{materialCompleted}/{Object.keys(materials).length}</b></button><button onClick={()=>setView("mine")}><small>日历提醒</small><b>{reminderNotes.length}</b></button></div></section>
+        <section className="today-focus"><div><span className="eyebrow">TODAY'S FOCUS</span><h3>今天先推进：{nextMaterial}</h3><p>用 30 分钟完成一个小版本，让申请准备持续向前。</p></div><div><button onClick={()=>{setMaterials(old=>({...old,[nextMaterial]:"准备中"}));setToast(`${nextMaterial} 已标记为准备中`)}}>开始处理</button><button onClick={()=>setView("mine")}>打开我的材料</button></div></section>
         <div className="dashboard-heading"><div><span className="eyebrow">MY APPLICATIONS</span><h2>收藏学校倒计时</h2></div><button onClick={()=>{setView("favorites");setTab("targets")}}>管理收藏 →</button></div>
         <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<div className="premium-empty"><b>收藏学校暂时没有已公布的截止日期</b><span>从项目库收藏学校后，这里只显示你的学校倒计时。</span></div>}</div>
         <div className="dashboard-heading reminder-heading"><div><span className="eyebrow">CALENDAR REMINDERS</span><h2>我的日历提醒</h2></div><button onClick={()=>setView("mine")}>打开日历 →</button></div>
@@ -377,7 +395,7 @@ export default function Home() {
 
       {view==="mine"&&<section className="mine-view">
         <div className="mine-grid"><section className="calendar-card"><div className="calendar-head"><button onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1))}>←</button><h2>{calendarMonth.getFullYear()} 年 {calendarMonth.getMonth()+1} 月</h2><button onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1))}>→</button></div><div className="calendar-week">{["日","一","二","三","四","五","六"].map(d=><span key={d}>{d}</span>)}</div><div className="calendar-grid">{monthDays.map((day,i)=>day?<button key={i} className={calendarNotes[dateKey(day)]?"has-note":""} onClick={()=>openCalendarDay(day)}><b>{day}</b>{calendarNotes[dateKey(day)]&&<><span>{calendarNotes[dateKey(day)].tag}</span><small>{calendarNotes[dateKey(day)].text}</small></>}</button>:<i key={i}/>)}</div></section>
-        <section className="materials-card"><span className="eyebrow">APPLICATION MATERIALS</span><h2>我的申请材料</h2><p>状态只保存在当前浏览器。</p><div className="material-progress"><i style={{width:`${materialCompleted/Object.keys(materials).length*100}%`}}/><span>{materialCompleted} / {Object.keys(materials).length} 已完成</span></div><div className="materials-list">{Object.entries(materials).map(([name,value])=><label key={name}><b>{name}</b><select className={`material-status ${value==="已完成"?"status-complete":value==="待修改"?"status-edit":value==="准备中"?"status-working":"status-not-started"}`} value={value} onChange={e=>setMaterials(old=>({...old,[name]:e.target.value}))}><option>未开始</option><option>准备中</option><option>待修改</option><option>已完成</option></select></label>)}</div></section></div>
+        <section className="materials-card"><span className="eyebrow">APPLICATION MATERIALS</span><h2>我的申请材料</h2><p>状态只保存在当前浏览器。</p><div className="material-progress"><i style={{width:`${materialCompleted/Object.keys(materials).length*100}%`}}/><span>{materialCompleted} / {Object.keys(materials).length} 已完成</span></div><div className="materials-list">{Object.entries(materials).map(([name,value])=><label className={`material-row ${value==="已完成"?"status-complete":value==="待修改"?"status-edit":value==="准备中"?"status-working":"status-not-started"}`} key={name}><b>{name}</b><select className="material-status" value={value} onChange={e=>setMaterials(old=>({...old,[name]:e.target.value}))}><option>未开始</option><option>准备中</option><option>待修改</option><option>已完成</option></select></label>)}</div></section></div>
       </section>}
 
       {(view==="schools"||view==="favorites") && <>
@@ -435,18 +453,19 @@ export default function Home() {
           <div><span>CV / Resume</span><b>{selected.cv}</b></div><div><span>SOP / PS</span><b>{selected.sop}</b></div>
           <div><span>GRE</span><b>{selected.gre}</b></div><div><span>学分 / 时长</span><b>{selected.credits} · {selected.duration}</b></div>
         </div>
+        <section className="school-introduction"><p className="kicker">SCHOOL & PROGRAM</p><h4>学校与机械硕士简介</h4><p>{schoolIntro(selected)}</p><div>{selected.tracks.slice(0,3).map(track=><span key={track.name}>{track.name}</span>)}</div></section>
         <section className="costs">
-          <p className="kicker">COST INFORMATION</p><h4>费用估算</h4>
+          <p className="kicker">MECHANICAL MASTER'S COST</p><h4>机械硕士费用参考</h4>
           <div className="cost-grid">
             <div><span>申请费</span><b>{APP_FEE_BY_REGION[programRegion(selected)]||"Not Available"}</b></div>
-            <div><span>项目学费</span><b>{costFor(selected.school).tuition}</b></div>
+            <div><span>机械硕士项目学费</span><b>{costFor(selected.school).tuition}</b></div>
             <div><span>生活费 / 合租</span><b>{costFor(selected.school).shared}</b></div>
             <div><span>保险</span><b>Not Available</b></div>
             <div><span>独居预算</span><b>{costFor(selected.school).privateRoom}</b></div>
             <div><span>预计总成本</span><b>Not Available</b></div>
           </div>
           <p className="housing-note"><b>常见租房要求：</b>{costFor(selected.school).note}</p>
-          <p className="budget-warning">费用为选校规划区间，不是学校报价；不同学分、学制、校区和房源会改变总成本，请在申请和签约前通过官网复核。</p>
+          <p className="budget-warning">这里只展示机械工程硕士项目费用；已找到可靠项目数据的使用较窄参考区间，其余明确标注待官网确认。</p>
         </section>
         <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>官网方向与课程整理</h4>
           {selected.tracks.map(t=><div className="track" key={t.name}><b>{t.name}</b><ul>{t.courses.map(c=><li key={c}><button onClick={()=>setSelectedCourse({course:c,track:t.name,program:selected})}>{c}<span>查看介绍</span></button></li>)}</ul></div>)}
@@ -474,7 +493,9 @@ export default function Home() {
     {calendarDate&&<div className="course-overlay" onClick={()=>setCalendarDate("")}><section className="calendar-editor" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCalendarDate("")}>×</button><p className="kicker">CALENDAR NOTE</p><h3>{calendarDate} 提醒</h3><div className="quick-tags">{["准备材料","联系推荐人","提交申请","核对官网","考试安排","缴费"].map(tag=><button key={tag} className={calendarTag===tag?"active":""} onClick={()=>setCalendarTag(tag)}>{tag}</button>)}</div><textarea value={calendarText} onChange={e=>setCalendarText(e.target.value)} placeholder="例如：完成康奈尔 SOP 初稿" autoFocus/><div className="editor-actions"><button className="delete-note" onClick={()=>{setCalendarText("");setCalendarNotes(old=>{const next={...old};delete next[calendarDate];return next});setCalendarDate("")}}>删除备注</button><button className="save-note" onClick={saveCalendarNote}>保存提醒</button></div></section></div>}
 
     <button className={`assistant-launcher ${assistantOpen?"open":""}`} onClick={()=>setAssistantOpen(v=>!v)} aria-label="打开坤械助手"><img src="./kun-mech-assistant.png" alt="坤械助手"/><span><b>坤械助手</b><small>问学校问题</small></span></button>
-    {assistantOpen&&<section className="assistant-panel" aria-label="坤械助手聊天窗口"><header><img src="./kun-mech-assistant.png" alt=""/><div><b>坤械助手</b><span>在线 · 支持连续追问</span></div><button onClick={()=>setAssistantOpen(false)}>×</button></header><div className="assistant-messages">{messages.map((m,i)=><div key={i} className={`assistant-message ${m.role}`}><p>{m.text}</p>{m.source&&<a href={m.source} target="_blank" rel="noreferrer">查看官方页面 ↗</a>}</div>)}</div><div className="assistant-suggestions">{["康奈尔大学学费","港科大有哪些方向","多伦多大学申请材料"].map(q=><button key={q} onClick={()=>sendAssistantQuestion(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();askAssistant()}}><input value={assistantQuery} onChange={e=>setAssistantQuery(e.target.value)} placeholder="输入学校和问题，也可以连续追问…" autoFocus/><button type="submit">发送</button></form><small className="assistant-note">回答来自当前网站数据，申请前请以官网为准。</small></section>}
+    {assistantOpen&&<section className="assistant-panel" aria-label="坤械助手聊天窗口"><header><img src="./kun-mech-assistant.png" alt=""/><div><b>坤械助手</b><span>机械硕士申请陪伴助手</span></div><button onClick={()=>setAssistantOpen(false)}>×</button></header><div className="assistant-messages">{messages.map((m,i)=><div key={i} className={`assistant-message ${m.role}`}><p>{m.text}</p>{m.source&&<a href={m.source} target="_blank" rel="noreferrer">查看官方页面 ↗</a>}</div>)}</div><div className="assistant-suggestions">{["今日计划","材料检查","选校建议","预算分析","港科大有哪些方向"].map(q=><button key={q} onClick={()=>sendAssistantQuestion(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();askAssistant()}}><input value={assistantQuery} onChange={e=>setAssistantQuery(e.target.value)} placeholder="问学校、材料、预算或申请安排…" autoFocus/><button type="submit">发送</button></form><small className="assistant-note">回答结合当前网站与个人进度，重要信息请以官网为准。</small></section>}
+
+    {toast&&<div className="interaction-toast" role="status">{toast}</div>}
 
     {compareOpen&&<div className="compare-overlay" onClick={()=>setCompareOpen(false)}><section className="compare-modal" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCompareOpen(false)}>×</button><p className="kicker">SCHOOL COMPARISON</p><h2>学校对比</h2><div className="compare-table"><div className="compare-labels"><b>项目</b><span>综合排名</span><span>申请费</span><span>学费</span><span>生活费</span><span>截止日期</span><span>位置</span><span>研究优势</span><span>官网</span></div>{compare.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;return <div className="compare-column" key={id}><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>#{p.rank}</span><span>{APP_FEE_BY_REGION[programRegion(p)]}</span><span>{costFor(p.school).tuition}</span><span>{costFor(p.school).shared}</span><span>{dateLabel(p.deadline)}</span><span>{programLocation(p)}</span><span>{p.tracks.map(t=>t.name).join(" · ")}</span><a href={p.source} target="_blank" rel="noreferrer">官网 ↗</a></div>})}</div></section></div>}
     {!!compare.length && <div className="compare-bar"><span>已选择 {compare.length}/3 个项目</span>{compare.map(id=>{const program=PROGRAM_BY_ID.get(id);return <b key={id}>{program ? SCHOOL_NAMES[program.school] || program.school.split(" ")[0] : id} <button onClick={()=>toggleCompare(id)}>×</button></b>})}<button className="compare-now" disabled={compare.length<2} onClick={()=>setCompareOpen(true)}>对比 {compare.length} 所学校</button></div>}
