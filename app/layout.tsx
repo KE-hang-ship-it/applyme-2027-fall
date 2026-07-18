@@ -11,8 +11,13 @@ export const metadata: Metadata = {
   applicationName: "ApplyME",
   manifest: "./manifest.webmanifest",
   icons: {
-    icon: [{ url: "./brand/favicon-48.png", type: "image/png", sizes: "48x48" }],
-    shortcut: "./brand/favicon-48.png",
+    icon: [
+      { url: "./brand/favicon.ico", type: "image/x-icon" },
+      { url: "./brand/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+      { url: "./brand/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "./brand/favicon-48x48.png", type: "image/png", sizes: "48x48" },
+    ],
+    shortcut: "./brand/favicon.ico",
     apple: [{ url: "./brand/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
   },
   openGraph: {
