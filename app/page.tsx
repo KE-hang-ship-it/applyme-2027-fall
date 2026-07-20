@@ -2,15 +2,36 @@
 
 /* eslint-disable react-hooks/set-state-in-effect, react/no-unescaped-entities */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { SchoolLogo } from "@/components/SchoolLogo";
 import { EmptyState } from "@/components/EmptyState";
 import { CompareButton } from "@/components/programs/CompareButton";
 import { RankingBadge } from "@/components/programs/RankingBadge";
 import { VerificationStatus } from "@/components/programs/VerificationStatus";
+import { ProgramDetailHeader } from "@/components/programs/ProgramDetailHeader";
+import { DataStatusBadge, getDataStatus } from "@/components/programs/DataStatusBadge";
+import { DetailNavigation } from "@/components/programs/DetailNavigation";
+import { CompareBar } from "@/components/programs/CompareBar";
+import { CourseModal } from "@/components/programs/CourseModal";
+import { SchoolListStats } from "@/components/school-list/SchoolListStats";
+import { SchoolListTabs } from "@/components/school-list/SchoolListTabs";
+import { SchoolListCard } from "@/components/school-list/SchoolListCard";
+import { SchoolListEmptyState } from "@/components/school-list/SchoolListEmptyState";
+import { ProgramQuickSummary } from "@/components/programs/detail/ProgramQuickSummary";
+import { ProgramEligibility } from "@/components/programs/detail/ProgramEligibility";
+import { ProgramDifficultyReference } from "@/components/programs/detail/ProgramDifficultyReference";
+import { ProgramCurriculum } from "@/components/programs/detail/ProgramCurriculum";
+import { ProgramAdmissions } from "@/components/programs/detail/ProgramAdmissions";
+import { ProgramCosts } from "@/components/programs/detail/ProgramCosts";
+import { ProgramHighlights } from "@/components/programs/detail/ProgramHighlights";
+import { ProgramResearchResources } from "@/components/programs/detail/ProgramResearchResources";
+import { ProgramSources } from "@/components/programs/detail/ProgramSources";
 import { getFieldVerification, overallVerification } from "@/lib/program-status";
-import { getTrustedRanking } from "@/lib/ranking-display";
-import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMode, View } from "@/types/application";
+import { getTrustedRanking, getRankingByType, getRankingValue, type RankingType } from "@/lib/ranking-display";
+import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMode, View, SchoolListCategory, SchoolListItem } from "@/types/application";
+import { US_MECHANICAL_PROGRAMS_ADDED } from "@/data/us-mechanical-programs-added";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useSchoolList } from "@/hooks/useSchoolList";
 
 const SCHOOL_NAMES: Record<string, string> = {
   "Princeton University":"普林斯顿大学", "Massachusetts Institute of Technology":"麻省理工学院",
@@ -33,6 +54,18 @@ const SCHOOL_NAMES: Record<string, string> = {
   "University of Washington":"华盛顿大学", "Lehigh University":"理海大学", "Northeastern University":"东北大学",
   "Purdue University":"普渡大学", "University of Georgia":"佐治亚大学", "University of Rochester":"罗切斯特大学",
   "Virginia Polytechnic Institute and State University":"弗吉尼亚理工大学",
+  "Texas A&M University--College Station":"德州农工大学",
+  "Pennsylvania State University--University Park":"宾夕法尼亚州立大学",
+  "University of Minnesota--Twin Cities":"明尼苏达大学双城分校",
+  "University of Colorado--Boulder":"科罗拉多大学博尔德分校",
+  "Rensselaer Polytechnic Institute":"伦斯勒理工学院",
+  "North Carolina State University":"北卡罗来纳州立大学",
+  "Arizona State University":"亚利桑那州立大学",
+  "Iowa State University":"爱荷华州立大学",
+  "University of Delaware":"特拉华大学",
+  "Case Western Reserve University":"凯斯西储大学",
+  "Colorado School of Mines":"科罗拉多矿业学院",
+  "Yale University":"耶鲁大学",
   "The University of Hong Kong":"香港大学", "The Chinese University of Hong Kong":"香港中文大学",
   "The Hong Kong University of Science and Technology":"香港科技大学",
   "University of Toronto":"多伦多大学", "University of British Columbia":"英属哥伦比亚大学", "McGill University":"麦吉尔大学", "University of Waterloo":"滑铁卢大学",
@@ -223,7 +256,7 @@ const OFFICIAL_LINKS:Record<string,Pick<Program,"departmentUrl"|"programUrl"|"ap
   "duke-me":{departmentUrl:"https://mems.duke.edu/",programUrl:"https://mems.duke.edu/academics/masters/",applicationUrl:"https://gradschool.duke.edu/admissions/application-instructions/"},
   "cmu-me":{departmentUrl:"https://www.meche.engineering.cmu.edu/",programUrl:"https://www.meche.engineering.cmu.edu/education/graduate-programs/admission/index.html",applicationUrl:"https://www.cmu.edu/graduate/admissions/index.html"}
 };
-const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS, ...REGIONAL_PROGRAMS, ...EXPANDED_PROGRAMS].map(program=>({...program,regionalOrder:program.regionalOrder??program.rank,regionalOrderLabel:program.regionalOrderLabel||"分区参考序号",...OFFICIAL_LINKS[program.id]})).sort((a,b)=>(a.rankValue??a.regionalOrder??999)-(b.rankValue??b.regionalOrder??999)||a.school.localeCompare(b.school));
+const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS, ...REGIONAL_PROGRAMS, ...EXPANDED_PROGRAMS, ...US_MECHANICAL_PROGRAMS_ADDED].map(program=>({...program,regionalOrder:program.regionalOrder??program.rank,regionalOrderLabel:program.regionalOrderLabel||"分区参考序号",...OFFICIAL_LINKS[program.id]})).sort((a,b)=>(a.rankValue??a.regionalOrder??999)-(b.rankValue??b.regionalOrder??999)||a.school.localeCompare(b.school));
 const PROGRAM_BY_ID = new Map(ALL_PROGRAMS.map(program=>[program.id,program]));
 
 const dateLabel = (date: string) => date === "待公布" ? date : new Date(`${date}T00:00:00`).toLocaleDateString("zh-CN", {year:"numeric",month:"short",day:"numeric"});
@@ -277,8 +310,8 @@ const needsFieldReview=(value:string)=>/待公布|待复核|待官网确认|Not 
 const rankingMeta=(program:Program)=>{const complete=Boolean(program.rankValue!==undefined&&program.rankSource&&program.rankYear&&program.rankType);return {value:complete?program.rankValue:program.regionalOrder??program.rank,isVerifiedRanking:complete,source:complete?program.rankSource:undefined,year:complete?program.rankYear:undefined,type:complete?program.rankType:undefined,url:complete?program.rankUrl:undefined,label:complete?program.rankType:program.regionalOrderLabel||"分区参考序号"};};
 
 const TRANSLATIONS={
-  zh:{verified:"已核实",pending:"待复核",programs:"项目库",saved:"收藏分类",mine:"我的",dataManagement:"数据管理",dataHelp:"备份、恢复或清空当前浏览器中的个人申请数据。",exportBackup:"导出备份",importBackup:"导入备份",clearData:"清空所有个人数据",clearWarning:"此操作无法撤销，建议先导出备份。",rankingNote:"不同国家和地区可能使用不同排名体系。排名仅作为选校参考，不等同于机械工程专业排名、录取难度或就业结果。",fieldPending:"该字段仍需以官网更新为准",department:"院系官网",programWebsite:"项目官网",applicationPortal:"申请入口",schoolIntro:"学校与机械硕士简介",costTitle:"机械硕士费用参考",coursesTitle:"官网方向与课程整理",privateNotes:"私人笔记",viewCourse:"查看介绍",schoolComparison:"学校对比",applicationFee:"申请费",tuition:"机械硕士项目学费",livingCost:"生活费 / 合租",insurance:"保险",privateRoom:"独居预算",totalCost:"预计总成本",regionalOrder:"分区参考序号",rankingPending:"排名来源待补充",program:"院系",degree:"学位",location:"位置",overallRanking:"综合大学排名",viewRankingSource:"查看排名来源",programStatus:"项目状态",meRanking:"机械工程专业排名",noMeRanking:"暂无统一可靠数据",officialLinksNote:"仅显示已经确认的官方入口。",interfaceSettings:"界面设置",languageLabel:"语言",appearance:"外观",light:"浅色",dark:"深色",system:"跟随系统",expired:"已过期",toDo:"待处理",noReminders:"还没有日历备注",noRemindersHelp:"在“我的”日历中点击日期添加备注。",close:"关闭",reminder:"提醒",calendarPlaceholder:"例如：完成康奈尔 SOP 初稿",deleteNote:"删除备注",saveReminder:"保存提醒",schoolOverview:"学校简介",programHighlights:"项目特点",bestFit:"适合人群",heroAlt:"校园代表性建筑",addTarget:"添加到我的目标",removeTarget:"从目标中移除",setCategory:"设置分类"},
-  en:{verified:"Verified",pending:"Needs review",programs:"Programs",saved:"Saved",mine:"My Workspace",dataManagement:"Data Management",dataHelp:"Back up, restore, or clear personal application data stored in this browser.",exportBackup:"Export Backup",importBackup:"Import Backup",clearData:"Clear Personal Data",clearWarning:"This cannot be undone. Export a backup first.",rankingNote:"Countries and regions may use different ranking systems. Rankings are only a school-selection reference and do not represent mechanical engineering strength, admission difficulty, or employment outcomes.",fieldPending:"Verify this field against the latest official update",department:"Department Website",programWebsite:"Program Website",applicationPortal:"Application Portal",schoolIntro:"School & Mechanical Master's Overview",costTitle:"Mechanical Master's Cost Guide",coursesTitle:"Official Directions & Courses",privateNotes:"Private Notes",viewCourse:"View details",schoolComparison:"School Comparison",applicationFee:"Application fee",tuition:"Mechanical master's tuition",livingCost:"Living cost / shared",insurance:"Insurance",privateRoom:"Private room budget",totalCost:"Estimated total cost",regionalOrder:"Regional reference order",rankingPending:"Ranking source pending",program:"Program",degree:"Degree",location:"Location",overallRanking:"Overall university ranking",viewRankingSource:"View ranking source",programStatus:"Program status",meRanking:"Mechanical engineering ranking",noMeRanking:"No consistent reliable dataset",officialLinksNote:"Only verified official links are shown.",interfaceSettings:"Interface Settings",languageLabel:"Language",appearance:"Appearance",light:"Light",dark:"Dark",system:"System",expired:"Expired",toDo:"To do",noReminders:"No calendar notes yet",noRemindersHelp:"Open My Workspace and select a date to add a note.",close:"Close",reminder:"Reminder",calendarPlaceholder:"Example: finish the first Cornell SOP draft",deleteNote:"Delete note",saveReminder:"Save reminder",schoolOverview:"University setting",programHighlights:"Program character",bestFit:"Who it suits",heroAlt:"signature campus setting",addTarget:"Add to my targets",removeTarget:"Remove from targets",setCategory:"Set category"}
+  zh:{dashboard:"仪表盘",verified:"已核实",pending:"待复核",programs:"项目库",saved:"收藏分类",mine:"我的",dataManagement:"数据管理",dataHelp:"备份、恢复或清空当前浏览器中的个人申请数据。",exportBackup:"导出备份",importBackup:"导入备份",clearData:"清空所有个人数据",clearWarning:"此操作无法撤销，建议先导出备份。",rankingNote:"不同国家和地区可能使用不同排名体系。排名仅作为选校参考，不等同于机械工程专业排名、录取难度或就业结果。",fieldPending:"该字段仍需以官网更新为准",department:"院系官网",programWebsite:"项目官网",applicationPortal:"申请入口",schoolIntro:"学校与项目",costTitle:"机械硕士费用参考",coursesTitle:"研究方向与课程",privateNotes:"私人笔记",viewCourse:"查看介绍",schoolComparison:"学校对比",applicationFee:"申请费",tuition:"项目学费",livingCost:"生活费 / 住宿",insurance:"保险",privateRoom:"其他预算",totalCost:"预计总成本",regionalOrder:"分区参考序号",rankingPending:"排名来源待补充",program:"院系",degree:"学位",location:"地点",overallRanking:"全国大学排名",viewRankingSource:"查看排名来源",programStatus:"验证状态",meRanking:"机械工程专业排名",noMeRanking:"暂未收录",officialLinksNote:"仅显示已经确认的官方入口。",interfaceSettings:"界面设置",languageLabel:"语言",appearance:"外观",light:"浅色",dark:"深色",system:"跟随系统",expired:"已过期",toDo:"待处理",noReminders:"还没有日历备注",noRemindersHelp:"在“我的”日历中点击日期添加备注。",close:"关闭",reminder:"提醒",calendarPlaceholder:"例如：完成康奈尔 SOP 初稿",deleteNote:"删除备注",saveReminder:"保存提醒",schoolOverview:"学校简介",programHighlights:"项目特点",bestFit:"适合人群",heroAlt:"校园代表性建筑",addTarget:"添加到我的申请",removeTarget:"从申请中移除",setCategory:"设置分类",schoolAndProgram:"学校与项目",programOverview:"项目介绍",mechanicalMasterCost:"机械硕士费用",directionsAndCourses:"方向与课程",officialProgramWebsite:"官方项目网站",autoSaved:"自动保存",lastUpdated:"最后更新",applicationDeadline:"申请截止日期",programDuration:"项目时长",estimatedTuition:"预计学费",nationalUniversityRanking:"全国大学排名",mechanicalEngineeringRanking:"机械工程专业排名",verificationStatus:"验证状态",notYetPublished:"官方尚未公布",notYetVerified:"尚未核实",notYetCollected:"暂未收录",historicalReference:"历史参考",officialData:"官方数据",budgetReference:"预算参考",applicationRequirements:"申请要求",creditsOrDuration:"学分 / 项目时长",summarizedFromCourses:"根据当前收录课程整理",courseInfoMayChange:"课程信息可能随学期变化",showAll:"显示全部",hide:"收起",reference:"参考数据"},
+  en:{dashboard:"Dashboard",verified:"Verified",pending:"Needs review",programs:"Programs",saved:"Saved",mine:"My Workspace",dataManagement:"Data Management",dataHelp:"Back up, restore, or clear personal application data stored in this browser.",exportBackup:"Export Backup",importBackup:"Import Backup",clearData:"Clear Personal Data",clearWarning:"This cannot be undone. Export a backup first.",rankingNote:"Countries and regions may use different ranking systems. Rankings are only a school-selection reference and do not represent mechanical engineering strength, admission difficulty, or employment outcomes.",fieldPending:"Verify this field against the latest official update",department:"Department Website",programWebsite:"Program Website",applicationPortal:"Application Portal",schoolIntro:"School & Program",costTitle:"Mechanical Master's Cost",coursesTitle:"Directions & Courses",privateNotes:"Private Notes",viewCourse:"View details",schoolComparison:"School Comparison",applicationFee:"Application fee",tuition:"Program tuition",livingCost:"Living cost / housing",insurance:"Insurance",privateRoom:"Other budget",totalCost:"Estimated total cost",regionalOrder:"Regional reference order",rankingPending:"Ranking source pending",program:"Program",degree:"Degree",location:"Location",overallRanking:"National University Ranking",viewRankingSource:"View ranking source",programStatus:"Verification Status",meRanking:"Mechanical Engineering Ranking",noMeRanking:"Not yet collected",officialLinksNote:"Only verified official links are shown.",interfaceSettings:"Interface Settings",languageLabel:"Language",appearance:"Appearance",light:"Light",dark:"Dark",system:"System",expired:"Expired",toDo:"To do",noReminders:"No calendar notes yet",noRemindersHelp:"Open My Workspace and select a date to add a note.",close:"Close",reminder:"Reminder",calendarPlaceholder:"Example: finish the first Cornell SOP draft",deleteNote:"Delete note",saveReminder:"Save reminder",schoolOverview:"Program Overview",programHighlights:"Program Highlights",bestFit:"Best Fit",heroAlt:"signature campus setting",addTarget:"Add to My Applications",removeTarget:"Remove from applications",setCategory:"Set category",schoolAndProgram:"School & Program",programOverview:"Program Overview",mechanicalMasterCost:"Mechanical Master's Cost",directionsAndCourses:"Directions & Courses",officialProgramWebsite:"Official Program Website",autoSaved:"Auto Saved",lastUpdated:"Last Updated",applicationDeadline:"Application Deadline",programDuration:"Program Duration",estimatedTuition:"Estimated Tuition",nationalUniversityRanking:"National University Ranking",mechanicalEngineeringRanking:"Mechanical Engineering Ranking",verificationStatus:"Verification Status",notYetPublished:"Not yet published by the university",notYetVerified:"Not yet verified",notYetCollected:"Not yet collected",historicalReference:"Historical reference",officialData:"Official data",budgetReference:"Budget reference",applicationRequirements:"Application Requirements",creditsOrDuration:"Credits / Duration",summarizedFromCourses:"Summarized from currently collected courses",courseInfoMayChange:"Course information may change by semester",showAll:"Show all",hide:"Hide",reference:"Reference"}
 } as const;
 type Overview={zh:{school:string;program:string;fit:string};en:{school:string;program:string;fit:string}};
 const SCHOOL_OVERVIEWS:Record<string,Overview>={
@@ -332,24 +365,22 @@ const kunify = (text:string) => text.replace(/[鸡机几计级及记际基积激
 
 export default function Home() {
   const [view,setView] = useState<View>("dashboard");
-  const [tab,setTab] = useState<"library"|"targets">("library");
+  const [tab,setTab] = useState<"library"|"favorites"|"schoolList">("library");
   const [query,setQuery] = useState("");
   const [degree,setDegree] = useState("全部");
   const [region,setRegion] = useState<"全部"|"美国"|"香港"|"加拿大"|"英国"|"澳大利亚">("美国");
   const [status,setStatus] = useState<"全部"|"已核实"|"待复核">("全部");
-  const [targets,setTargets] = useState<string[]>([]);
+  const [rankingType,setRankingType] = useState<RankingType>("national-university");
+  const [sortOrder,setSortOrder] = useState<"default"|"best-rank-first"|"worst-rank-first">("default");
   const [selected,setSelected] = useState<Program | null>(null);
+  const [expanded,setExpanded] = useState<Record<string,boolean>>({requirements:true,overview:false,costs:false,courses:false,notes:false});
   const [selectedCourse,setSelectedCourse] = useState<{course:string;track:string;program:Program}|null>(null);
   const [compare,setCompare] = useState<string[]>([]);
   const [compareOpen,setCompareOpen] = useState(false);
-  const [ready,setReady] = useState(false);
   const [language,setLanguage] = useState<"zh"|"en">("zh");
   const [dark,setDark] = useState(false);
   const [themeMode,setThemeMode]=useState<ThemeMode>("system");
   const [filtersOpen,setFiltersOpen] = useState(false);
-  const [categoryFilter,setCategoryFilter] = useState<Category|"全部">("全部");
-  const [categories,setCategories] = useState<Record<string,Category>>({});
-  const [notes,setNotes] = useState<Record<string,string>>({});
   const [featureFilters,setFeatureFilters] = useState<string[]>([]);
   const [deadlineWindow,setDeadlineWindow] = useState("全部");
   const [assistantOpen,setAssistantOpen] = useState(false);
@@ -362,47 +393,84 @@ export default function Home() {
   const [calendarText,setCalendarText] = useState("");
   const [calendarTag,setCalendarTag] = useState("prepare-materials");
   const [materials,setMaterials] = useState<Record<string,string>>({CV:"未开始",PS:"未开始",推荐信:"未开始",成绩单:"未开始",语言成绩:"未开始",GRE:"未开始",护照:"未开始"});
+  const [notes,setNotes] = useState<Record<string,string>>({});
   const [toast,setToast] = useState("");
+  const [schoolListTab,setSchoolListTab] = useState<"all" | "reach" | "match" | "safety" | "unclassified">("all");
   const backupInputRef=useRef<HTMLInputElement>(null);
+  const drawerRef=useRef<HTMLElement>(null);
+
+  const {
+    favoriteIds,
+    addFavorite,
+    removeFavorite,
+    toggleFavorite,
+    isFavorite,
+  } = useFavorites();
+
+  const {
+    items: schoolListItems,
+    addItem,
+    removeItem,
+    updateCategory,
+    updateNote,
+    getItem,
+    isInSchoolList,
+    stats: schoolListStats,
+  } = useSchoolList();
 
   useEffect(() => {
-    const saved = localStorage.getItem("me-targets");
-    if (saved) setTargets(JSON.parse(saved));
-    const savedCategories=localStorage.getItem("me-categories"); if(savedCategories)setCategories(JSON.parse(savedCategories));
-    const savedNotes=localStorage.getItem("me-notes"); if(savedNotes)setNotes(JSON.parse(savedNotes));
     const savedCalendar=localStorage.getItem("me-calendar"); if(savedCalendar){const raw=JSON.parse(savedCalendar) as Record<string,CalendarNote>;setCalendarNotes(Object.fromEntries(Object.entries(raw).map(([date,note])=>[date,{...note,tag:LEGACY_CALENDAR_TAGS[note.tag]||note.tag}])))}
     const savedMaterials=localStorage.getItem("me-materials"); if(savedMaterials)setMaterials(JSON.parse(savedMaterials));
+    const savedNotes=localStorage.getItem("me-notes"); if(savedNotes)setNotes(JSON.parse(savedNotes));
     localStorage.removeItem("me-trackers");
     const savedThemeMode=localStorage.getItem("me-theme-mode");const mode:ThemeMode=savedThemeMode==="light"||savedThemeMode==="dark"||savedThemeMode==="system"?savedThemeMode:"system";setThemeMode(mode);setDark(mode==="system"?window.matchMedia("(prefers-color-scheme: dark)").matches:mode==="dark");
     const savedLanguage=localStorage.getItem("me-language"); if(savedLanguage==="en"||savedLanguage==="zh")setLanguage(savedLanguage);
-    setReady(true);
   },[]);
-  useEffect(() => { if (ready) localStorage.setItem("me-targets",JSON.stringify(targets)); },[targets,ready]);
-  useEffect(()=>{if(ready)localStorage.setItem("me-categories",JSON.stringify(categories))},[categories,ready]);
-  useEffect(()=>{if(ready)localStorage.setItem("me-notes",JSON.stringify(notes))},[notes,ready]);
-  useEffect(()=>{if(ready)localStorage.setItem("me-calendar",JSON.stringify(calendarNotes))},[calendarNotes,ready]);
-  useEffect(()=>{if(ready)localStorage.setItem("me-materials",JSON.stringify(materials))},[materials,ready]);
-  useEffect(()=>{if(ready){localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"}},[dark,ready]);
-  useEffect(()=>{if(!ready)return;localStorage.setItem("me-theme-mode",themeMode);const media=window.matchMedia("(prefers-color-scheme: dark)"),apply=()=>setDark(themeMode==="system"?media.matches:themeMode==="dark");apply();media.addEventListener("change",apply);return()=>media.removeEventListener("change",apply)},[themeMode,ready]);
-  useEffect(()=>{if(ready){localStorage.setItem("me-language",language);document.documentElement.lang=language==="en"?"en":"zh-CN";document.title="ApplyME | 机械工程硕士申请"}},[language,ready]);
+  useEffect(()=>{localStorage.setItem("me-calendar",JSON.stringify(calendarNotes))},[calendarNotes]);
+  useEffect(()=>{localStorage.setItem("me-materials",JSON.stringify(materials))},[materials]);
+  useEffect(()=>{localStorage.setItem("me-notes",JSON.stringify(notes))},[notes]);
+  useEffect(()=>{localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"},[dark]);
+  useEffect(()=>{localStorage.setItem("me-theme-mode",themeMode);const media=window.matchMedia("(prefers-color-scheme: dark)"),apply=()=>setDark(themeMode==="system"?media.matches:themeMode==="dark");apply();media.addEventListener("change",apply);return()=>media.removeEventListener("change",apply)},[themeMode]);
+  useEffect(()=>{localStorage.setItem("me-language",language);document.documentElement.lang=language==="en"?"en":"zh-CN";document.title="ApplyME | 机械工程硕士申请"},[language]);
   useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(""),2600);return()=>clearTimeout(timer)},[toast]);
 
-  const list = useMemo(() => ALL_PROGRAMS.filter(p =>
-    (view !== "favorites" || targets.includes(p.id)) &&
-    (tab === "library" || targets.includes(p.id)) &&
-    (tab === "targets" || region === "全部" || (p.region || "美国") === region) &&
-    (degree === "全部" || p.degree === degree) &&
-    (status === "全部" || programVerification(p) === status) &&
-    (deadlineWindow === "全部" || (deadlineInfo(p.deadline).days !== null && deadlineInfo(p.deadline).days! >= 0 && deadlineInfo(p.deadline).days! <= Number(deadlineWindow))) &&
-    (categoryFilter === "全部" || categories[p.id] === categoryFilter) &&
-    featureFilters.every(feature=>`${p.field} ${p.program} ${p.tracks.map(t=>`${t.name} ${t.courses.join(" ")}`).join(" ")}`.toLowerCase().includes(feature.toLowerCase().replace(/s$/,""))) &&
-    `${p.school}${SCHOOL_NAMES[p.school] || ""}${p.program}${p.degree}${p.field}${programLocation(p)}`.toLowerCase().includes(query.toLowerCase())
-  ).sort((a,b)=>(rankingMeta(a).value??999)-(rankingMeta(b).value??999)||a.school.localeCompare(b.school)),[view,tab,targets,degree,status,region,query,categoryFilter,categories,featureFilters,deadlineWindow]);
+  const list = useMemo(() => {
+    const filtered = ALL_PROGRAMS.filter(p =>
+      (view !== "favorites" || favoriteIds.includes(p.id)) &&
+      (view !== "schoolList" || schoolListItems.some(item => item.programId === p.id)) &&
+      (tab === "library" || favoriteIds.includes(p.id) || schoolListItems.some(item => item.programId === p.id)) &&
+      (p.region || "美国") === "美国" &&
+      (degree === "全部" || p.degree === degree) &&
+      (status === "全部" || programVerification(p) === status) &&
+      (deadlineWindow === "全部" || (deadlineInfo(p.deadline).days !== null && deadlineInfo(p.deadline).days! >= 0 && deadlineInfo(p.deadline).days! <= Number(deadlineWindow))) &&
+      featureFilters.every(feature=>`${p.field} ${p.program} ${p.tracks.map(t=>`${t.name} ${t.courses.join(" ")}`).join(" ")}`.toLowerCase().includes(feature.toLowerCase().replace(/s$/,""))) &&
+      `${p.school}${SCHOOL_NAMES[p.school] || ""}${p.program}${p.degree}${p.field}${programLocation(p)}`.toLowerCase().includes(query.toLowerCase())
+    );
 
-  const toggleTarget = (id:string) => setTargets(old => {const removing=old.includes(id),program=PROGRAM_BY_ID.get(id),name=program?SCHOOL_NAMES[program.school]||program.school:"该项目";setToast(removing?`已从收藏移除：${name}`:`已收藏：${name}`);return removing ? old.filter(x=>x!==id) : [...old,id]});
+    if (sortOrder === "default") {
+      return filtered;
+    }
+
+    const sorted = [...filtered].sort((a, b) => {
+      const rankA = getRankingValue(a, rankingType);
+      const rankB = getRankingValue(b, rankingType);
+
+      if (rankA === null && rankB === null) return 0;
+      if (rankA === null) return 1;
+      if (rankB === null) return -1;
+
+      if (sortOrder === "best-rank-first") {
+        return rankA - rankB;
+      } else {
+        return rankB - rankA;
+      }
+    });
+
+    return sorted;
+  }, [view,tab,favoriteIds,schoolListItems,degree,status,region,query,featureFilters,deadlineWindow,rankingType,sortOrder]);
+
   const toggleCompare = (id:string) => setCompare(old => old.includes(id) ? old.filter(x=>x!==id) : old.length < 3 ? [...old,id] : old);
-  const setCategory=(id:string,value:string)=>setCategories(old=>{const next={...old};if(!value)delete next[id];else next[id]=value as Category;return next});
-  const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>targets.includes(p.id)&&deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,6),[targets]);
+  const upcoming=useMemo(()=>ALL_PROGRAMS.filter(p=>schoolListItems.some(item=>item.programId===p.id)&&deadlineInfo(p.deadline).days!==null&&deadlineInfo(p.deadline).days!>=0).sort((a,b)=>(deadlineInfo(a.deadline).days||0)-(deadlineInfo(b.deadline).days||0)).slice(0,6),[schoolListItems]);
   const todayKey=getLocalDateKey();
   const reminderNotes=useMemo(()=>Object.entries(calendarNotes).sort(([a],[b])=>{const aPast=a<todayKey,bPast=b<todayKey;if(aPast!==bPast)return aPast?1:-1;return aPast?b.localeCompare(a):a.localeCompare(b)}).slice(0,6),[calendarNotes,todayKey]);
   const materialCompleted=Object.values(materials).filter(value=>value==="已完成").length;
@@ -411,15 +479,15 @@ export default function Home() {
   const dateKey=(day:number)=>`${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
   const openCalendarDay=(day:number)=>{const key=dateKey(day),note=calendarNotes[key];setCalendarDate(key);setCalendarText(note?.text||"");setCalendarTag(note?.tag||"prepare-materials")};
   const saveCalendarNote=()=>{if(!calendarDate)return;setCalendarNotes(old=>{const next={...old};if(calendarText.trim())next[calendarDate]={text:calendarText.trim(),tag:calendarTag};else delete next[calendarDate];return next});setCalendarDate("")};
-  const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const q=question.toLowerCase();let answer:{text:string;source?:string;programId?:string};if(q.includes("材料检查")||q.includes("材料进度")||q.includes("material check"))answer={text:en?`You have completed ${materialCompleted}/${Object.keys(materials).length} materials. I suggest working on ${materialName(nextMaterial)} next.`:`你的材料已完成 ${materialCompleted}/${Object.keys(materials).length}。建议下一步优先处理 ${nextMaterial}，完成后我会同步更新主页进度。`};else if(q.includes("今日")||q.includes("先做什么")||q.includes("today"))answer={text:en?`Start with ${materialName(nextMaterial)} today. Spend 30 minutes on one small draft instead of trying to finish everything at once.`:`今天先推进 ${nextMaterial}。建议用 30 分钟完成一个小版本，不追求一次写完。`};else if(q.includes("选校建议")||q.includes("school advice"))answer={text:en?`You currently have ${targets.length} saved mechanical master's programs. Check your reach, target and safer options, then compare course fit and total budget.`:`你当前收藏了 ${targets.length} 个机械硕士项目。建议按冲刺、目标、保底重新检查比例，并优先确认每个项目的课程匹配和总预算。`};else if((q.includes("预算")||q.includes("budget"))&&!ALL_PROGRAMS.some(p=>q.includes((SCHOOL_NAMES[p.school]||"").toLowerCase())))answer={text:en?"Split your budget into mechanical master's tuition, housing, insurance and daily expenses. Tell me a school and I can use the figures recorded here.":"预算建议分成机械硕士学费、住房、保险和日常生活四部分。告诉我具体学校，我会给出该项目当前记录的学费与住房参考。"};else answer=answerSchoolQuestion(question,assistantSchool);if(answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:kunify(answer.text),source:answer.source}]);setAssistantQuery("")};
+  const sendAssistantQuestion=(value:string)=>{const question=value.trim();if(!question)return;const q=question.toLowerCase();let answer:{text:string;source?:string;programId?:string};if(q.includes("材料检查")||q.includes("材料进度")||q.includes("material check"))answer={text:en?`You have completed ${materialCompleted}/${Object.keys(materials).length} materials. I suggest working on ${materialName(nextMaterial)} next.`:`你的材料已完成 ${materialCompleted}/${Object.keys(materials).length}。建议下一步优先处理 ${nextMaterial}，完成后我会同步更新主页进度。`};else if(q.includes("今日")||q.includes("先做什么")||q.includes("today"))answer={text:en?`Start with ${materialName(nextMaterial)} today. Spend 30 minutes on one small draft instead of trying to finish everything at once.`:`今天先推进 ${nextMaterial}。建议用 30 分钟完成一个小版本，不追求一次写完。`};else if(q.includes("选校建议")||q.includes("school advice"))answer={text:en?`You currently have ${schoolListItems.length} programs in your school list. Check your reach, match and safety options, then compare course fit and total budget.`:`你当前选校名单中有 ${schoolListItems.length} 个机械硕士项目。建议按冲刺、匹配、保底重新检查比例，并优先确认每个项目的课程匹配和总预算。`};else if((q.includes("预算")||q.includes("budget"))&&!ALL_PROGRAMS.some(p=>q.includes((SCHOOL_NAMES[p.school]||"").toLowerCase())))answer={text:en?"Split your budget into mechanical master's tuition, housing, insurance and daily expenses. Tell me a school and I can use the figures recorded here.":"预算建议分成机械硕士学费、住房、保险和日常生活四部分。告诉我具体学校，我会给出该项目当前记录的学费与住房参考。"};else answer=answerSchoolQuestion(question,assistantSchool);if(answer.programId)setAssistantSchool(answer.programId);setMessages(old=>[...old,{role:"user",text:question},{role:"assistant",text:kunify(answer.text),source:answer.source}]);setAssistantQuery("")};
   const askAssistant=()=>sendAssistantQuestion(assistantQuery);
   const en=language==="en";
   const t=TRANSLATIONS[language];
   const calendarTagLabel=(tag:string)=>CALENDAR_TAG_LABELS[language][(LEGACY_CALENDAR_TAGS[tag]||tag) as keyof typeof CALENDAR_TAG_LABELS.zh]||tag;
-  const exportBackup=()=>{const payload={version:1,exportedAt:new Date().toISOString(),app:"ApplyME",data:{targets,categories,notes,calendarNotes,materials,language,theme:themeMode}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`applyme-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);setToast(en?"Backup exported":"备份已导出")};
-  const importBackup=async(file?:File)=>{if(!file)return;try{const parsed=JSON.parse(await file.text()) as {version?:unknown;app?:unknown;data?:unknown};if(parsed.version!==1||parsed.app!=="ApplyME"||!parsed.data||typeof parsed.data!=="object")throw new Error("format");const data=parsed.data as Record<string,unknown>;if(!Array.isArray(data.targets)||!data.categories||typeof data.categories!=="object"||!data.notes||typeof data.notes!=="object"||!data.calendarNotes||typeof data.calendarNotes!=="object"||!data.materials||typeof data.materials!=="object")throw new Error("fields");if(!window.confirm(en?"Importing will replace your current personal data. Continue?":"导入会覆盖当前个人数据，是否继续？"))return;setTargets(data.targets.filter((x):x is string=>typeof x==="string"));setCategories(data.categories as Record<string,Category>);setNotes(data.notes as Record<string,string>);setCalendarNotes(data.calendarNotes as Record<string,CalendarNote>);setMaterials(data.materials as Record<string,string>);if(data.language==="zh"||data.language==="en")setLanguage(data.language);if(data.theme==="dark"||data.theme==="light"||data.theme==="system")setThemeMode(data.theme);setToast(en?"Backup restored":"备份已恢复")}catch{setToast(en?"Invalid or damaged backup file":"备份文件无效或已损坏")}finally{if(backupInputRef.current)backupInputRef.current.value=""}};
-  const clearPersonalData=()=>{if(!window.confirm(en?"Clear all saved programs, categories, notes, reminders and material progress? This cannot be undone.":"确定清空收藏、分类、笔记、提醒和材料进度吗？此操作无法撤销。"))return;setTargets([]);setCategories({});setNotes({});setCalendarNotes({});setMaterials({CV:"未开始",PS:"未开始",推荐信:"未开始",成绩单:"未开始",语言成绩:"未开始",GRE:"未开始",护照:"未开始"});setToast(en?"Personal data cleared":"个人数据已清空")};
-  const title=view==="dashboard"?"Dashboard":view==="favorites"?(en?"Saved & Categories":"收藏与分类"):view==="mine"?(en?"My Workspace":"我的"):(en?"Program Library":"项目库");
+  const exportBackup=()=>{const payload={version:2,exportedAt:new Date().toISOString(),app:"ApplyME",data:{favoriteIds,schoolListItems,calendarNotes,materials,language,theme:themeMode}};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`applyme-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);setToast(en?"Backup exported":"备份已导出")};
+  const importBackup=async(file?:File)=>{if(!file)return;try{const parsed=JSON.parse(await file.text()) as {version?:unknown;app?:unknown;data?:unknown};if(parsed.app!=="ApplyME"||!parsed.data||typeof parsed.data!=="object")throw new Error("format");const data=parsed.data as Record<string,unknown>;if(!data.calendarNotes||typeof data.calendarNotes!=="object"||!data.materials||typeof data.materials!=="object")throw new Error("fields");if(!window.confirm(en?"Importing will replace your current personal data. Continue?":"导入会覆盖当前个人数据，是否继续？"))return;if(Array.isArray(data.targets)){data.targets.forEach((id)=>{if(typeof id==="string")addFavorite(id)})}if(Array.isArray(data.favoriteIds)){data.favoriteIds.forEach((id)=>{if(typeof id==="string")addFavorite(id)})}if(Array.isArray(data.schoolListItems)){data.schoolListItems.forEach((item)=>{if(typeof item==="object"&&item&&typeof (item as SchoolListItem).programId==="string"){const si=item as SchoolListItem;addItem(si.programId);updateCategory(si.programId,si.category||"unclassified");updateNote(si.programId,si.note||"")}})}setCalendarNotes(data.calendarNotes as Record<string,CalendarNote>);setMaterials(data.materials as Record<string,string>);if(data.language==="zh"||data.language==="en")setLanguage(data.language);if(data.theme==="dark"||data.theme==="light"||data.theme==="system")setThemeMode(data.theme);setToast(en?"Backup restored":"备份已恢复")}catch{setToast(en?"Invalid or damaged backup file":"备份文件无效或已损坏")}finally{if(backupInputRef.current)backupInputRef.current.value=""}};
+  const clearPersonalData=()=>{if(!window.confirm(en?"Clear all favorites, school list, notes, reminders and material progress? This cannot be undone.":"确定清空收藏、选校名单、笔记、提醒和材料进度吗？此操作无法撤销。"))return;favoriteIds.forEach(id=>removeFavorite(id));schoolListItems.forEach(item=>removeItem(item.programId));setCalendarNotes({});setMaterials({CV:"未开始",PS:"未开始",推荐信:"未开始",成绩单:"未开始",语言成绩:"未开始",GRE:"未开始",护照:"未开始"});setToast(en?"Personal data cleared":"个人数据已清空")};
+  const title=view==="dashboard"?t.dashboard:view==="favorites"?(en?"Favorites":"收藏"):view==="schoolList"?(en?"My School List":"我的选校"):view==="mine"?t.mine:t.programs;
   const materialName=(name:string)=>en?({"推荐信":"Recommendation Letters","成绩单":"Transcript","语言成绩":"Language Test","护照":"Passport"} as Record<string,string>)[name]||name:name;
   const categoryName=(value:string)=>en?({Favorite:"Saved",Dream:"Reach",Target:"Target",Safety:"Safer",Priority:"Priority"} as Record<string,string>)[value]||value:CATEGORY_LABELS[value as Category]||value;
 
@@ -431,10 +499,11 @@ export default function Home() {
         <img className="brand-logo-mobile" src="./brand/applyme-icon-dark.png" alt="ApplyME"/>
       </a>
       <nav className="primary-nav">
-        <button className={view==="dashboard"?"active":""} onClick={()=>setView("dashboard")}><span>⌂</span> Dashboard</button>
-        <button className={view==="schools"?"active":""} onClick={()=>{setView("schools");setTab("library")}}><span>◇</span> {en?"Programs":"项目库"} <small>{ALL_PROGRAMS.length}</small></button>
-        <button className={view==="favorites"?"active":""} onClick={()=>{setView("favorites");setTab("targets")}}><span>☆</span> {en?"Saved":"收藏分类"} <small>{targets.length}</small></button>
-        <button className={view==="mine"?"active":""} onClick={()=>setView("mine")}><span>◎</span> {en?"My Workspace":"我的"}</button>
+        <button className={view==="dashboard"?"active":""} onClick={()=>setView("dashboard")}><span>⌂</span> {t.dashboard}</button>
+        <button className={view==="schools"?"active":""} onClick={()=>{setView("schools");setTab("library")}}><span>◇</span> {t.programs} <small>{ALL_PROGRAMS.length}</small></button>
+        <button className={view==="favorites"?"active":""} onClick={()=>setView("favorites")}><span>☆</span> {en?"Favorites":"收藏"} <small>{favoriteIds.length}</small></button>
+        <button className={view==="schoolList"?"active":""} onClick={()=>setView("schoolList")}><span>▣</span> {en?"My School List":"我的选校"} <small>{schoolListItems.length}</small></button>
+        <button className={view==="mine"?"active":""} onClick={()=>setView("mine")}><span>◎</span> {t.mine}</button>
       </nav>
       <section className="interface-settings desktop-settings" aria-label={t.interfaceSettings}><b>⚙ {t.interfaceSettings}</b><div><span>{t.languageLabel}</span><div className="setting-options"><button className={language==="zh"?"active":""} onClick={()=>setLanguage("zh")}>中文</button><button className={language==="en"?"active":""} onClick={()=>setLanguage("en")}>EN</button></div></div><div><span>{t.appearance}</span><div className="setting-options"><button className={themeMode==="light"?"active":""} onClick={()=>setThemeMode("light")}>{t.light}</button><button className={themeMode==="dark"?"active":""} onClick={()=>setThemeMode("dark")}>{t.dark}</button><button className={themeMode==="system"?"active":""} onClick={()=>setThemeMode("system")}>{t.system}</button></div></div></section>
       <div className="side-note"><img className="brand-footer-mark" src="./brand/applyme-icon-monochrome.png" alt="" aria-hidden="true"/><div><b>2027 FALL</b><p>{en?"Mechanical Engineering Master's Applications":"机械工程硕士申请"}</p><span>{en?"Saved in this browser":"数据保存在当前浏览器"}</span></div></div>
@@ -447,10 +516,10 @@ export default function Home() {
       </header>
 
       {view==="dashboard" && <section className="dashboard-view">
-        <section className="command-overview"><div><span>APPLICATION COMMAND CENTER</span><h2>{en?"2027 Fall Application Hub":"2027 Fall 申请控制台"}</h2><p>{en?"Keep saved programs, material progress and reminders in one place.":"集中查看收藏项目、材料进度和近期提醒。"}</p></div><div className="command-metrics"><button onClick={()=>{setView("favorites");setTab("targets")}}><small>{en?"Saved Programs":"收藏项目"}</small><b>{targets.length}</b></button><button onClick={()=>setView("mine")}><small>{en?"Materials Done":"材料完成"}</small><b>{materialCompleted}/{Object.keys(materials).length}</b></button><button onClick={()=>setView("mine")}><small>{en?"Reminders":"日历提醒"}</small><b>{reminderNotes.length}</b></button></div></section>
+        <section className="command-overview"><div><span>APPLICATION COMMAND CENTER</span><h2>{en?"2027 Fall Application Hub":"2027 Fall 申请控制台"}</h2><p>{en?"Keep saved programs, material progress and reminders in one place.":"集中查看收藏项目、材料进度和近期提醒。"}</p></div><div className="command-metrics"><button onClick={()=>setView("favorites")}><small>{en?"Favorites":"收藏"}</small><b>{favoriteIds.length}</b></button><button onClick={()=>setView("schoolList")}><small>{en?"School List":"选校名单"}</small><b>{schoolListItems.length}</b></button><button onClick={()=>setView("mine")}><small>{en?"Materials Done":"材料完成"}</small><b>{materialCompleted}/{Object.keys(materials).length}</b></button><button onClick={()=>setView("mine")}><small>{en?"Reminders":"日历提醒"}</small><b>{reminderNotes.length}</b></button></div></section>
         <section className="today-focus"><div><span className="eyebrow">TODAY'S FOCUS</span><h3>{en?`Start with: ${materialName(nextMaterial)}`:`今天先推进：${nextMaterial}`}</h3><p>{en?"Spend 30 minutes on a small draft and keep moving forward.":"用 30 分钟完成一个小版本，让申请准备持续向前。"}</p></div><div><button onClick={()=>{setMaterials(old=>({...old,[nextMaterial]:"准备中"}));setToast(`${nextMaterial} 已标记为准备中`)}}>{en?"Start":"开始处理"}</button><button onClick={()=>setView("mine")}>{en?"Open materials":"打开我的材料"}</button></div></section>
-        <div className="dashboard-heading"><div><span className="eyebrow">MY APPLICATIONS</span><h2>{en?"Saved School Countdowns":"收藏学校倒计时"}</h2></div><button onClick={()=>{setView("favorites");setTab("targets")}}>{en?"Manage saved":"管理收藏"} →</button></div>
-        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<EmptyState title={en?"No published deadlines in saved programs":"收藏学校暂时没有已公布的截止日期"} description={en?"Save programs from the library to see only your own countdowns here.":"从项目库收藏学校后，这里只显示你的学校倒计时。"} actionLabel={en?"Browse programs":"浏览项目"} onAction={()=>setView("schools")}/>}</div>
+        <div className="dashboard-heading"><div><span className="eyebrow">MY SCHOOL LIST</span><h2>{en?"School List Countdowns":"选校名单倒计时"}</h2></div><button onClick={()=>setView("schoolList")}>{en?"Manage school list":"管理选校名单"} →</button></div>
+        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p} size="small"/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<EmptyState title={en?"No published deadlines in school list":"选校名单暂时没有已公布的截止日期"} description={en?"Add programs to your school list to see countdowns here.":"从项目库添加学校到选校名单后，这里显示你的倒计时。"} actionLabel={en?"Browse programs":"浏览项目"} onAction={()=>setView("schools")}/>}</div>
         <div className="dashboard-heading reminder-heading"><div><span className="eyebrow">CALENDAR REMINDERS</span><h2>{en?"My Calendar Reminders":"我的日历提醒"}</h2></div><button onClick={()=>setView("mine")}>{en?"Open calendar":"打开日历"} →</button></div>
         <div className="reminder-list">{reminderNotes.length?reminderNotes.map(([date,note])=><button key={date} className={date<todayKey?"is-past":""} onClick={()=>setView("mine")}><time>{date.slice(5).replace("-","/")}</time><span className="reminder-tag">{calendarTagLabel(note.tag)}</span><b>{note.text}</b><small className="reminder-state">{date<todayKey?t.expired:t.toDo}</small></button>):<EmptyState title={t.noReminders} description={t.noRemindersHelp} actionLabel={en?"Open calendar":"打开日历"} onAction={()=>setView("mine")}/>}</div>
       </section>}
@@ -464,8 +533,9 @@ export default function Home() {
 
       {(view==="schools"||view==="favorites") && <>
       <section className="summary compact-summary">
-        <button onClick={()=>{setTab("library");setCategoryFilter("全部")}}><span>{en?"Programs":"收录项目"}</span><b>{ALL_PROGRAMS.length}</b></button>
-        <button onClick={()=>setTab("targets")}><span>{en?"My Targets":"我的目标"}</span><b>{targets.length}</b></button>
+        <button onClick={()=>setTab("library")}><span>{en?"Programs":"收录项目"}</span><b>{ALL_PROGRAMS.length}</b></button>
+        <button onClick={()=>setTab("favorites")}><span>{en?"Favorites":"收藏"}</span><b>{favoriteIds.length}</b></button>
+        <button onClick={()=>setTab("schoolList")}><span>{en?"School List":"选校名单"}</span><b>{schoolListItems.length}</b></button>
         <button className={`status-card verified-card ${status==="已核实"?"active":""}`} onClick={()=>setStatus(status==="已核实"?"全部":"已核实")}><span>{en?"Verified programs":"项目已核实"}</span><b>{ALL_PROGRAMS.filter(p=>programVerification(p)==="已核实").length}</b></button>
         <button className={`status-card pending-card ${status==="待复核"?"active":""}`} onClick={()=>setStatus(status==="待复核"?"全部":"待复核")}><span>{en?"Programs to review":"项目待确认"}</span><b>{ALL_PROGRAMS.filter(p=>programVerification(p)==="待复核").length}</b></button>
       </section>
@@ -473,100 +543,279 @@ export default function Home() {
       {status!=="全部" && <div className={`filter-notice ${status==="已核实"?"is-verified":"is-pending"}`}>{en?"Showing: ":"正在显示："}{status==="已核实"?t.verified:t.pending} ({list.length})<button onClick={()=>setStatus("全部")}>{en?"Show all":"显示全部"}</button></div>}
 
       <div className="toolbar">
-        <div className="region-tabs" aria-label={en?"Region filter":"地区筛选"}>{(["全部","美国","香港","加拿大","英国","澳大利亚"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{en?({"全部":"All","美国":"USA","香港":"Hong Kong","加拿大":"Canada","英国":"UK","澳大利亚":"Australia"} as Record<string,string>)[r]:r}</button>)}</div>
+        <div className="region-tabs" aria-label={en?"Region filter":"地区筛选"}>{(["全部","美国"] as const).map(r=><button key={r} className={region===r?"active":""} onClick={()=>setRegion(r)}>{en?({"全部":"All","美国":"USA"} as Record<string,string>)[r]:r}</button>)}</div>
         <select value={degree} aria-label={en?"Degree filter":"学位筛选"} onChange={e=>setDegree(e.target.value)}><option value="全部">{en?"All degrees":"全部学位"}</option><option>MS</option><option>MSc</option><option>MSc(Eng)</option><option>SM</option><option>ScM</option><option>MSE</option><option>MEng</option><option>MMechE</option></select>
-        <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value as Category|"全部")}><option value="全部">{en?"All categories":"全部分类"}</option>{Object.keys(CATEGORY_LABELS).map(v=><option value={v} key={v}>{categoryName(v)}</option>)}</select>
         <select value={deadlineWindow} aria-label={en?"Deadline filter":"截止时间筛选"} onChange={e=>setDeadlineWindow(e.target.value)}><option value="全部">{en?"All deadlines":"全部截止时间"}</option><option value="30">{en?"Within 30 days":"30 天内"}</option><option value="60">{en?"Within 60 days":"60 天内"}</option><option value="90">{en?"Within 90 days":"90 天内"}</option></select>
+        <select value={rankingType} aria-label={en?"Ranking type":"排名类型"} onChange={e=>setRankingType(e.target.value as RankingType)}>
+          <option value="national-university">{en?"National University Ranking":"综合排名"}</option>
+          <option value="graduate-mechanical-engineering">{en?"Mechanical Engineering Ranking":"机械工程排名"}</option>
+        </select>
+        <select value={sortOrder} aria-label={en?"Sort order":"排序方式"} onChange={e=>setSortOrder(e.target.value as "default"|"best-rank-first"|"worst-rank-first")}>
+          <option value="default">{en?"Default Order":"默认顺序"}</option>
+          <option value="best-rank-first">{en?"Best Rank First":"排名从高到低"}</option>
+          <option value="worst-rank-first">{en?"Worst Rank First":"排名从低到高"}</option>
+        </select>
         <button className={`filter-button ${filtersOpen?"active":""}`} onClick={()=>setFiltersOpen(v=>!v)}>{en?"Filters":"筛选"} {featureFilters.length?`· ${featureFilters.length}`:""}</button>
       </div>
       {filtersOpen&&<div className="filter-panel"><span>{en?"Study areas":"研究方向"}</span>{["Robotics","Controls","Thermal","Manufacturing","Materials","Artificial Intelligence"].map(f=><button key={f} className={featureFilters.includes(f)?"active":""} onClick={()=>setFeatureFilters(old=>old.includes(f)?old.filter(x=>x!==f):[...old,f])}>{f}</button>)}<button className="clear-filter" onClick={()=>setFeatureFilters([])}>{en?"Clear":"清除"}</button></div>}
 
       <section className="table-card">
-        <div className="thead"><span>{en?"School / Program":"学校 / 项目"}</span><span>{en?"Degree":"学位"}</span><span>{en?"Deadline":"截止日期"}</span><span>{en?"Countdown":"倒计时"}</span><span>{en?"Category":"分类"}</span><span>{en?"Status":"状态"}</span><span /></div>
+        <div className="thead">
+          <span>{en?"School / Program":"学校 / 项目"}</span>
+          <span>{en?"Degree":"学位"}</span>
+          <span>{rankingType === "national-university" ? (en?"National University Ranking":"综合大学排名") : (en?"Mechanical Engineering Ranking":"机械工程专业排名")}</span>
+          <span>{en?"Deadline":"截止日期"}</span>
+          <span>{en?"Countdown":"倒计时"}</span>
+          <span>{en?"Status":"状态"}</span>
+          <span />
+        </div>
         {list.map(p=><article className={`row ${overallVerification(p)==="verified"?"row-verified":"row-pending"}`} key={p.id} onClick={()=>setSelected(p)} tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelected(p)}}}>
-          <div className="school"><RankingBadge ranking={getTrustedRanking(p)} language={language} compact/><SchoolLogo program={p}/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school}</span><small>{p.program} · {p.field}</small></div></div>
+          <div className="school"><SchoolLogo program={p} size="small"/><div><b>{SCHOOL_NAMES[p.school] || p.school}</b><span>{p.school}</span><small>{p.program} · {p.field}</small></div></div>
           <strong className="degree">{p.degree}</strong>
+          <div className="ranking-cell">
+            <RankingBadge ranking={getRankingByType(p, rankingType)} language={language} compact rankingType={rankingType}/>
+          </div>
           <span>{dateLabel(p.deadline)}</span>
           <span className={`countdown ${deadlineInfo(p.deadline).tone}`}>{deadlineInfo(p.deadline).label}</span>
-          <select className={`category-select ${categories[p.id]||""}`} value={categories[p.id]||""} onClick={e=>e.stopPropagation()} onChange={e=>setCategory(p.id,e.target.value)}><option value="">{en?"Uncategorized":"未分类"}</option>{Object.keys(CATEGORY_LABELS).map(v=><option value={v} key={v}>{categoryName(v)}</option>)}</select>
           <span className={overallVerification(p)==="verified"?"verified":"pending"}>{overallVerification(p)==="verified"?t.verified:overallVerification(p)==="historical"?(en?"Historical":"历史参考"):t.pending}</span>
           <div className="actions">
             <CompareButton selected={compare.includes(p.id)} language={language} onToggle={()=>toggleCompare(p.id)} compact/>
-            <button className={targets.includes(p.id)?"saved":""} onClick={e=>{e.stopPropagation();toggleTarget(p.id)}} title="添加或移除目标">{targets.includes(p.id)?"−":"＋"}</button>
+            <button className={isFavorite(p.id)?"saved":""} onClick={e=>{e.stopPropagation();toggleFavorite(p.id);const program=PROGRAM_BY_ID.get(p.id),name=program?SCHOOL_NAMES[program.school]||program.school:"该项目";setToast(isFavorite(p.id)?`已取消收藏：${name}`:`已收藏：${name}`)}} title={en?"Add to favorites":"收藏"}>{isFavorite(p.id)?"★":"☆"}</button>
+            <button className={isInSchoolList(p.id)?"saved":""} onClick={e=>{e.stopPropagation();if(isInSchoolList(p.id)){removeItem(p.id);const program=PROGRAM_BY_ID.get(p.id),name=program?SCHOOL_NAMES[program.school]||program.school:"该项目";setToast(`已从选校名单移除：${name}`)}else{addItem(p.id);const program=PROGRAM_BY_ID.get(p.id),name=program?SCHOOL_NAMES[program.school]||program.school:"该项目";setToast(`已加入选校名单：${name}`)}}} title={en?"Add to school list":"加入选校名单"}>{isInSchoolList(p.id)?"✓":"＋"}</button>
           </div>
         </article>)}
-        {!list.length && <div className="empty">{tab==="targets"?"还没有目标项目，请从项目库点击“＋”添加。":"没有找到项目。"}</div>}
+        {!list.length && <div className="empty">{tab==="favorites"?(en?"No favorite programs yet. Browse the program library and save programs you're interested in.":"还没有收藏项目。浏览项目库并保存感兴趣的项目。"):tab==="schoolList"?(en?"Your school list is empty. Add shortlisted programs here to organize reach, match, and safety options.":"你的选校名单还是空的。将经过筛选的项目加入这里，开始整理冲刺、匹配和保底方案。"):"没有找到项目。"}</div>}
       </section>
       <p className="disclaimer">{t.rankingNote}<br/>{en?"U.S. programs use verified U.S. News data when available; other regions use verified QS data. Unverified internal ordering is never shown as an official ranking.":"美国项目仅在有可靠来源时显示 U.S. News；其他地区仅在有可靠来源时显示 QS。内部排序不会作为官方排名展示。"}</p>
       <div className="data-disclaimer" role="note">{en?"Application requirements, deadlines, tuition, rankings, and course offerings may change by application cycle. This website is intended for planning purposes only. Always verify the latest information on the official university website before applying.":"申请要求、截止日期、学费、排名和课程可能随申请周期变化。本网站仅用于规划；申请前请务必在大学官网核实最新信息。"}</div>
       </>}
 
+      {view==="schoolList" && <section className="school-list-view">
+        <header className="school-list-header">
+          <div className="school-list-header-content">
+            <h1>{en ? "My School List" : "我的选校"}</h1>
+            <p>{en ? "Organize your reach, match, and safety programs into a clear school selection plan." : "整理你的冲刺、匹配和保底项目，建立清晰的选校方案。"}</p>
+          </div>
+          <div className="school-list-header-actions">
+            <button className="school-list-header-action-primary" onClick={() => setView("schools")}>
+              {en ? "Add Programs" : "去项目库添加项目"}
+            </button>
+            <button className="school-list-header-action-secondary" onClick={() => { setView("schools"); setTab("favorites"); }}>
+              {en ? "View Favorites" : "查看收藏"}
+            </button>
+          </div>
+        </header>
+
+        <SchoolListStats stats={schoolListStats()} total={schoolListItems.length} en={en} />
+
+        <SchoolListTabs
+          activeTab={schoolListTab}
+          stats={schoolListStats()}
+          total={schoolListItems.length}
+          en={en}
+          onTabChange={(tab) => setSchoolListTab(tab)}
+        />
+
+        {schoolListItems.length === 0 ? (
+          <SchoolListEmptyState
+            en={en}
+            onBrowsePrograms={() => setView("schools")}
+            onViewFavorites={() => { setView("schools"); setTab("favorites"); }}
+          />
+        ) : (
+          <div className="school-list-content">
+            {schoolListTab === "all" ? (
+              (['reach', 'match', 'safety', 'unclassified'] as const).map(category => {
+                const categoryItems = schoolListItems.filter(item => item.category === category);
+                const categoryLabel = {
+                  reach: en ? 'Reach' : '冲刺',
+                  match: en ? 'Match' : '匹配',
+                  safety: en ? 'Safety' : '保底',
+                  unclassified: en ? 'Unclassified' : '未分类'
+                }[category];
+                if (categoryItems.length === 0) return null;
+                return (
+                  <div key={category} className={`school-list-group school-list-group-${category}`}>
+                    <h2 className="school-list-group-title">
+                      {categoryLabel} ({categoryItems.length})
+                    </h2>
+                    <div className="school-list-group-items">
+                      {categoryItems.map(item => {
+                        const program = PROGRAM_BY_ID.get(item.programId);
+                        if (!program) return null;
+                        return (
+                          <SchoolListCard
+                            key={item.programId}
+                            program={program}
+                            item={item}
+                            en={en}
+                            onViewDetail={(p) => setSelected(p)}
+                            onUpdateCategory={updateCategory}
+                            onUpdateNote={updateNote}
+                            onRemove={removeItem}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className={`school-list-group school-list-group-${schoolListTab}`}>
+                <h2 className="school-list-group-title">
+                  {{
+                    reach: en ? 'Reach' : '冲刺',
+                    match: en ? 'Match' : '匹配',
+                    safety: en ? 'Safety' : '保底',
+                    unclassified: en ? 'Unclassified' : '未分类'
+                  }[schoolListTab]} ({schoolListItems.filter(item => item.category === schoolListTab).length})
+                </h2>
+                <div className="school-list-group-items">
+                  {schoolListItems
+                    .filter(item => item.category === schoolListTab)
+                    .map(item => {
+                      const program = PROGRAM_BY_ID.get(item.programId);
+                      if (!program) return null;
+                      return (
+                        <SchoolListCard
+                          key={item.programId}
+                          program={program}
+                          item={item}
+                          en={en}
+                          onViewDetail={(p) => setSelected(p)}
+                          onUpdateCategory={updateCategory}
+                          onUpdateNote={updateNote}
+                          onRemove={removeItem}
+                        />
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>}
+
     </section>
 
     {selected && <div className="overlay" onClick={()=>setSelected(null)}>
-      <section className="drawer school-detail-drawer" onClick={e=>e.stopPropagation()}>
-        <section className={`school-hero hero-${selected.id.split("-")[0]}`}>
-          <div className="hero-fallback" aria-hidden="true"><SchoolLogo program={selected} className="hero-school-mark"/><strong>{selected.school.split(" ").map(word=>word[0]).join("").slice(0,4)}</strong></div>
-          <div className="hero-shade"/><button className="close hero-close" aria-label={t.close} onClick={()=>setSelected(null)}>×</button>
-          <div className="hero-copy"><span className={programVerification(selected)==="已核实"?"verified":"pending"}>{programVerification(selected)==="已核实"?t.verified:t.pending}</span><p>{programLocation(selected)}</p><h2>{SCHOOL_NAMES[selected.school]||selected.school}</h2><h3>{selected.school}</h3><b>{selected.degree} · {selected.program}</b></div>
-          <div className="hero-quick-stats" aria-label={en?"Program quick stats":"项目速览"}><div><span>{en?"Degree":"学位"}</span><b>{selected.degree}</b></div><div><span>{en?"Deadline":"截止日期"}</span><b>{dateLabel(selected.deadline)}</b></div><div><span>GRE</span><b>{selected.gre||t.fieldPending}</b></div><div><span>{en?"Duration":"学制"}</span><b>{selected.duration||t.fieldPending}</b></div><div><span>{en?"Tuition":"学费"}</span><b>{costFor(selected.school).tuition}</b></div></div>
-        </section>
+      <section className="drawer school-detail-drawer" onClick={e=>e.stopPropagation()} ref={drawerRef} style={{ overflowY: "auto", maxHeight: "100vh" }}>
+        <button className="close hero-close" aria-label={t.close} onClick={()=>setSelected(null)}>×</button>
+        <ProgramDetailHeader
+          program={selected}
+          language={language}
+          isSaved={isFavorite(selected.id)}
+          isInSchoolList={isInSchoolList(selected.id)}
+          isComparing={compare.includes(selected.id)}
+          onSave={() => toggleFavorite(selected.id)}
+          onAddToSchoolList={() => {
+            if (isInSchoolList(selected.id)) {
+              removeItem(selected.id);
+              const name = SCHOOL_NAMES[selected.school] || selected.school;
+              setToast(`已从选校名单移除：${name}`);
+            } else {
+              addItem(selected.id);
+              const name = SCHOOL_NAMES[selected.school] || selected.school;
+              setToast(`已加入选校名单：${name}`);
+            }
+          }}
+          onToggleCompare={() => toggleCompare(selected.id)}
+        />
+        <DetailNavigation language={language} onNavigate={(id) => setExpanded(prev => ({ ...prev, [id]: true }))} scrollContainer={drawerRef.current} />
         <div className="detail-body">
-        <div className="detail-actions"><button className="target-btn" onClick={()=>toggleTarget(selected.id)}>{targets.includes(selected.id)?t.removeTarget:`＋ ${t.addTarget}`}</button><select aria-label={t.setCategory} className={`category-select ${categories[selected.id]||""}`} value={categories[selected.id]||""} onChange={e=>setCategory(selected.id,e.target.value)}><option value="">{t.setCategory}</option>{Object.entries(CATEGORY_LABELS).map(([v])=><option value={v} key={v}>{categoryName(v)}</option>)}</select><CompareButton selected={compare.includes(selected.id)} language={language} onToggle={()=>toggleCompare(selected.id)}/></div>
-        <section className="detail-overview"><div><span>{t.program}</span><b>{selected.program}</b></div><div><span>{t.degree}</span><b>{selected.degree}</b></div><div><span>{t.location}</span><b>{programLocation(selected)}</b></div><div className="ranking-detail"><span>{t.overallRanking}</span><RankingBadge ranking={getTrustedRanking(selected)} language={language}/></div><div><span>{t.programStatus}</span><b className={overallVerification(selected)==="verified"?"verified":"pending"}>{overallVerification(selected)==="verified"?t.verified:overallVerification(selected)==="historical"?(en?"Historical reference":"历史参考"):t.pending}</b></div><div><span>{t.meRanking}</span><b>{t.noMeRanking}</b></div></section>
-        <div className={`detail-deadline ${deadlineInfo(selected.deadline).tone}`}><div><span>APPLICATION DEADLINE</span><b>{dateLabel(selected.deadline)}</b></div><strong>{deadlineInfo(selected.deadline).label}</strong></div>
-        <div className="facts">
-          <div className={needsFieldReview(selected.deadline)?"field-review":""}><span>{en?"Deadline":"截止日期"}</span><b>{dateLabel(selected.deadline)}</b><VerificationStatus verification={getFieldVerification(selected,"deadline")} language={language}/></div><div className={needsFieldReview(selected.letters)?"field-review":""}><span>{en?"Recommendations":"推荐信"}</span><b>{selected.letters||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"recommendations")} language={language}/></div>
-          <div className={needsFieldReview(selected.cv)?"field-review":""}><span>CV / Resume</span><b>{selected.cv||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"cv")} language={language}/></div><div className={needsFieldReview(selected.sop)?"field-review":""}><span>SOP / PS</span><b>{selected.sop||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"sop")} language={language}/></div>
-          <div className={needsFieldReview(selected.gre)?"field-review":""}><span>GRE</span><b>{selected.gre||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"gre")} language={language}/></div><div className={needsFieldReview(selected.credits)?"field-review":""}><span>{en?"Credits / Duration":"学分 / 时长"}</span><b>{selected.credits||t.fieldPending} · {selected.duration||t.fieldPending}</b><VerificationStatus verification={getFieldVerification(selected,"credits")} language={language}/></div>
-        </div>
-        <section className="overview-section"><div className="section-heading"><p className="kicker">SCHOOL & PROGRAM</p><h4>{t.schoolIntro}</h4></div><div className="overview-grid"><article><span>01</span><h5>{t.schoolOverview}</h5><p>{getOverview(selected,language).school}</p></article><article><span>02</span><h5>{t.programHighlights}</h5><p>{getOverview(selected,language).program}</p></article><article><span>03</span><h5>{t.bestFit}</h5><p>{getOverview(selected,language).fit}</p></article></div><small>{en?"Confirm final curriculum and admission requirements on the official program website.":"最终课程设置与申请要求请以项目官网为准。"}</small></section>
-        <section className="costs">
-          <p className="kicker">MECHANICAL MASTER'S COST</p><h4>{t.costTitle}</h4>
-          <div className="cost-grid">
-            <div><span>{t.applicationFee}</span><b>{APP_FEE_BY_REGION[programRegion(selected)]||"Not Available"}</b></div>
-            <div><span>{t.tuition}</span><b>{costFor(selected.school).tuition}</b></div>
-            <div><span>{t.livingCost}</span><b>{costFor(selected.school).shared}</b></div>
-            <div><span>{t.insurance}</span><b>Not Available</b></div>
-            <div><span>{t.privateRoom}</span><b>{costFor(selected.school).privateRoom}</b></div>
-            <div><span>{t.totalCost}</span><b>Not Available</b></div>
+          <ProgramQuickSummary program={selected} language={language} />
+          
+          <ProgramEligibility program={selected} language={language} />
+          
+          <ProgramDifficultyReference 
+            program={selected} 
+            language={language} 
+            userCategory={schoolListItems.find(item => item.programId === selected.id)?.category} 
+          />
+          
+          <ProgramCurriculum 
+            program={selected} 
+            language={language}
+            onCourseClick={(track, course) => setSelectedCourse({ course, track, program: selected })}
+          />
+          
+          <ProgramAdmissions program={selected} language={language} />
+          
+          <ProgramCosts program={selected} language={language} />
+          
+          <ProgramHighlights program={selected} language={language} />
+          
+          <ProgramResearchResources 
+            program={selected} 
+            language={language}
+            onCourseClick={(track, course) => setSelectedCourse({ course, track, program: selected })}
+          />
+          
+          <ProgramSources program={selected} language={language} />
+
+          <section id="notes" className="program-detail-section program-notes">
+            <div className="program-detail-section-header">
+              <span className="program-detail-section-badge">{en ? "PRIVATE NOTES" : "私人笔记"}</span>
+              <h2 className="program-detail-section-title">{en ? "Private Notes" : "私人笔记"}</h2>
+              <span className="program-detail-section-status">{en ? "Auto Saved" : "自动保存"}</span>
+            </div>
+            <textarea 
+              value={notes[selected.id]||""} 
+              onChange={e => setNotes(old => ({ ...old, [selected.id]: e.target.value }))} 
+              placeholder={en ? "Record faculty, directions, outcomes, location or personal thoughts…" : "记录教授、研究方向、就业、天气、安全或个人想法…"} 
+              className="program-notes-textarea"
+            />
+            <span className="program-notes-hint">{en ? "Saved only in this browser" : "仅保存在当前浏览器"}</span>
+          </section>
+
+          <div className="program-detail-footer">
+            <p className="program-detail-footer-updated">{t.lastUpdated} · {language === "zh" ? "2026年7月20日" : "July 20, 2026"}</p>
+            <p className="program-detail-footer-disclaimer">{en ? "Always verify the latest information on the official university website before applying." : "申请前请务必在大学官网核实最新信息。"}</p>
           </div>
-          <p className="housing-note"><b>常见租房要求：</b>{costFor(selected.school).note}</p>
-          <p className="budget-warning"><span className="historical-badge">{en?"Historical / pending reference":"历史 / 待核实参考"}</span>{en?"Tuition and living-cost figures are planning references, not a bill. Currency, data year, billing basis, credits, duration, housing, and personal spending must be confirmed on official pages.":"学费与生活费仅为规划参考，并非正式账单。币种、数据年份、计费方式、学分、学制、住房和个人支出均需在官网确认。"}</p>
-        </section>
-        <div className="tracks"><p className="kicker">DIRECTIONS & COURSES</p><h4>{t.coursesTitle}</h4>
-          {selected.tracks.map(track=><div className="track" key={track.name}><b>{track.name}</b><ul>{track.courses.map(c=><li key={c}><button onClick={()=>setSelectedCourse({course:c,track:track.name,program:selected})}>{c}<span>{t.viewCourse}</span></button></li>)}</ul></div>)}
-          <p className="context-disclaimer">{en?"Course availability and content may change by semester. Please verify the latest curriculum on the official university website.":"课程开设与内容可能随学期变化，请在大学官网核实最新培养方案。"}</p>
-        </div>
-        <div className="official-links" aria-label={t.officialLinksNote}>{selected.departmentUrl&&<a title={t.department} className="source secondary-link" href={selected.departmentUrl} target="_blank" rel="noreferrer noopener">{t.department} ↗</a>}{selected.programUrl&&<a title={t.programWebsite} className="source source-button" href={selected.programUrl} target="_blank" rel="noreferrer noopener">{t.programWebsite} ↗</a>}{selected.applicationUrl&&<a title={t.applicationPortal} className="source secondary-link" href={selected.applicationUrl} target="_blank" rel="noreferrer noopener">{t.applicationPortal} ↗</a>}<small>{t.officialLinksNote}</small></div>
-        <section className="notes-section"><p className="kicker">PRIVATE NOTES · AUTO SAVED</p><h4>{t.privateNotes}</h4><textarea value={notes[selected.id]||""} onChange={e=>setNotes(old=>({...old,[selected.id]:e.target.value}))} placeholder={en?"Record faculty, directions, outcomes, location or personal thoughts…":"记录教授、研究方向、就业、天气、安全或个人想法…"} /><span>{en?"Saved only in this browser":"仅保存在当前浏览器"}</span></section>
-        <p className="last-updated">Last Updated · July 17, 2026</p>
-        <p className="source-note">当前范围包括美国项目、香港八所 UGC 资助大学、加拿大四校、英国 QS 2027 世界前 100 院校及澳大利亚 Group of Eight。无对应机械工程硕士的学校明确标记为“暂无匹配项目”；课程与要求请以官方页面为最终依据。</p>
         </div>
       </section>
     </div>}
 
-    {selectedCourse && <div className="course-overlay" onClick={()=>setSelectedCourse(null)}>
-      <section className="course-modal" role="dialog" aria-modal="true" aria-labelledby="course-title" onClick={e=>e.stopPropagation()}>
-        <button className="course-close" onClick={()=>setSelectedCourse(null)} aria-label="关闭课程介绍">×</button>
-        <p className="kicker">COURSE PROFILE</p>
-        <h3 id="course-title">{selectedCourse.course}</h3>
-        <p className="course-school">{SCHOOL_NAMES[selectedCourse.program.school] || selectedCourse.program.school} · {selectedCourse.track}</p>
-        <div className="course-description"><span>课程内容导读</span><p>{courseDescription(selectedCourse.course)}</p></div>
-        <div className="course-meta"><div><span>所属项目</span><b>{selectedCourse.program.degree} · {selectedCourse.program.program}</b></div><div><span>学分 / 先修课</span><b>请在当学年官方课程目录确认</b></div></div>
-        <a className="source source-button" href={selectedCourse.program.curriculumUrl||selectedCourse.program.programUrl||selectedCourse.program.source} target="_blank" rel="noopener noreferrer">{en?"Open official curriculum page":"前往官方项目与课程页面"} ↗</a>
-        <p className="source-note">中文内容为便于选校的概括，不替代官网原始课程说明。</p>
-      </section>
-    </div>}
+    {selectedCourse && <CourseModal 
+      course={selectedCourse.course} 
+      track={selectedCourse.track} 
+      program={selectedCourse.program}
+      language={language}
+      onClose={() => setSelectedCourse(null)}
+      schoolNames={SCHOOL_NAMES}
+    />}
 
     {calendarDate&&<div className="course-overlay" onClick={()=>setCalendarDate("")}><section className="calendar-editor" onClick={e=>e.stopPropagation()}><button className="course-close" aria-label={t.close} onClick={()=>setCalendarDate("")}>×</button><p className="kicker">CALENDAR NOTE</p><h3>{calendarDate} {t.reminder}</h3><div className="quick-tags">{CALENDAR_TAGS.map(tag=><button key={tag} className={calendarTag===tag?"active":""} onClick={()=>setCalendarTag(tag)}>{calendarTagLabel(tag)}</button>)}</div><textarea value={calendarText} onChange={e=>setCalendarText(e.target.value)} placeholder={t.calendarPlaceholder} autoFocus/><div className="editor-actions"><button className="delete-note" onClick={()=>{setCalendarText("");setCalendarNotes(old=>{const next={...old};delete next[calendarDate];return next});setCalendarDate("")}}>{t.deleteNote}</button><button className="save-note" onClick={saveCalendarNote}>{t.saveReminder}</button></div></section></div>}
 
-    <button className={`assistant-launcher ${assistantOpen?"open":""} ${compare.length?"compare-active":""}`} onClick={()=>setAssistantOpen(v=>!v)} aria-label="打开坤械助手"><img src="./kun-mech-assistant-v2.png" alt="坤械助手"/><span><b>{en?"KunME Assistant":"坤械助手"}</b><small>{en?"Ask me anything":"问我申请问题"}</small></span></button>
+    <button className={`assistant-launcher compact ${assistantOpen?"open":""} ${compare.length?"compare-active":""}`} onClick={()=>setAssistantOpen(v=>!v)} aria-label={en?"Open KunME Assistant":"打开坤械助手"} style={{
+        width: "52px",
+        height: "52px",
+        borderRadius: "50%",
+        padding: 0,
+        border: "2px solid var(--hairline)",
+        background: "var(--surface)",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+        display: "grid",
+        placeItems: "center",
+        cursor: "pointer",
+        transition: "transform .16s, box-shadow .16s",
+        position: "fixed",
+        right: "24px",
+        bottom: "24px",
+        zIndex: 1000,
+      }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}><img src="./kun-mech-assistant-v2.png" alt={en?"KunME Assistant":"坤械助手"} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "50%" }}/></button>
     {assistantOpen&&<section className={`assistant-panel ${compare.length?"compare-active":""}`} aria-label="坤械助手聊天窗口"><header><img src="./kun-mech-assistant-v2.png" alt=""/><div><b>{en?"KunME Assistant":"坤械助手"}</b><span>{en?"Your mechanical master's application companion":"机械硕士申请陪伴助手"}</span></div><button onClick={()=>setAssistantOpen(false)}>×</button></header><div className="assistant-messages">{messages.map((m,i)=><div key={i} className={`assistant-message ${m.role}`}><p>{m.text}</p>{m.source&&<a href={m.source} target="_blank" rel="noreferrer">{en?"Open official page":"查看官方页面"} ↗</a>}</div>)}</div><div className="assistant-suggestions">{(en?["Today's plan","Material check","School advice","Budget analysis","HKUST directions"]:["今日计划","材料检查","选校建议","预算分析","港科大有哪些方向"]).map(q=><button key={q} onClick={()=>sendAssistantQuestion(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();askAssistant()}}><input value={assistantQuery} onChange={e=>setAssistantQuery(e.target.value)} placeholder={en?"Ask about schools, materials, budget or planning…":"问学校、材料、预算或申请安排…"} autoFocus/><button type="submit">{en?"Send":"发送"}</button></form><small className="assistant-note">{en?"Answers use this workspace; verify important details on official sites.":"回答结合当前网站与个人进度，重要信息请以官网为准。"}</small></section>}
 
     {toast&&<div className="interaction-toast" role="status">{toast}</div>}
 
     {compareOpen&&<div className="compare-overlay" onClick={()=>setCompareOpen(false)}><section className="compare-modal" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCompareOpen(false)}>×</button><p className="kicker">SCHOOL COMPARISON</p><h2>学校对比</h2><div className="compare-table"><div className="compare-labels"><b>项目</b><span>综合排名</span><span>申请费</span><span>学费</span><span>生活费</span><span>截止日期</span><span>位置</span><span>研究优势</span><span>官网</span></div>{compare.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;return <div className="compare-column" key={id}><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>#{p.rank}</span><span>{APP_FEE_BY_REGION[programRegion(p)]}</span><span>{costFor(p.school).tuition}</span><span>{costFor(p.school).shared}</span><span>{dateLabel(p.deadline)}</span><span>{programLocation(p)}</span><span>{p.tracks.map(t=>t.name).join(" · ")}</span><a href={p.source} target="_blank" rel="noreferrer">官网 ↗</a></div>})}</div></section></div>}
-    {!!compare.length && <div className="compare-bar"><span>已选择 {compare.length}/3 个项目</span>{compare.map(id=>{const program=PROGRAM_BY_ID.get(id);return <b key={id}>{program ? SCHOOL_NAMES[program.school] || program.school.split(" ")[0] : id} <button onClick={()=>toggleCompare(id)}>×</button></b>})}<button className="compare-now" disabled={compare.length<2} onClick={()=>setCompareOpen(true)}>对比 {compare.length} 所学校</button></div>}
+    {!!compare.length && <CompareBar 
+      compare={compare} 
+      programs={PROGRAM_BY_ID} 
+      onRemove={toggleCompare} 
+      onCompare={() => setCompareOpen(true)}
+      language={language}
+      schoolNames={SCHOOL_NAMES}
+    />}
   </main>
 }
