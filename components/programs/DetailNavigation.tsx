@@ -10,24 +10,24 @@ interface DetailNavigationProps {
 
 const NAV_ITEMS = {
   zh: [
-    { id: "eligibility", icon: "👤", label: "适不适合我", subtitle: "背景与门槛" },
-    { id: "difficulty", icon: "📊", label: "申请难度", subtitle: "排名与类型" },
-    { id: "curriculum", icon: "📚", label: "项目学什么", subtitle: "课程与方向" },
-    { id: "admissions", icon: "📋", label: "怎么申请", subtitle: "材料与截止" },
-    { id: "costs", icon: "💰", label: "费用与时间", subtitle: "学费与时长" },
-    { id: "highlights", icon: "✨", label: "为什么考虑", subtitle: "优势与提醒" },
-    { id: "research", icon: "🔬", label: "课程研究", subtitle: "实验室与资源" },
-    { id: "sources", icon: "🔗", label: "来源核实", subtitle: "官网与更新时间" },
+    { id: "eligibility", label: "适不适合我" },
+    { id: "difficulty", label: "申请难度" },
+    { id: "curriculum", label: "项目学什么" },
+    { id: "admissions", label: "怎么申请" },
+    { id: "costs", label: "费用与时间" },
+    { id: "highlights", label: "为什么考虑" },
+    { id: "research", label: "课程研究" },
+    { id: "sources", label: "来源核实" },
   ],
   en: [
-    { id: "eligibility", icon: "👤", label: "Fit for Me", subtitle: "Background & requirements" },
-    { id: "difficulty", icon: "📊", label: "Admission Difficulty", subtitle: "Rankings & program type" },
-    { id: "curriculum", icon: "📚", label: "What You’ll Study", subtitle: "Curriculum & tracks" },
-    { id: "admissions", icon: "📋", label: "How to Apply", subtitle: "Materials & deadlines" },
-    { id: "costs", icon: "💰", label: "Cost & Duration", subtitle: "Tuition & timeline" },
-    { id: "highlights", icon: "✨", label: "Why Consider It", subtitle: "Strengths & cautions" },
-    { id: "research", icon: "🔬", label: "Courses & Research", subtitle: "Labs & resources" },
-    { id: "sources", icon: "🔗", label: "Sources & Verification", subtitle: "Official links & updates" },
+    { id: "eligibility", label: "Eligibility" },
+    { id: "difficulty", label: "Difficulty" },
+    { id: "curriculum", label: "Curriculum" },
+    { id: "admissions", label: "Admissions" },
+    { id: "costs", label: "Costs" },
+    { id: "highlights", label: "Highlights" },
+    { id: "research", label: "Research" },
+    { id: "sources", label: "Sources" },
   ],
 };
 
@@ -147,12 +147,13 @@ export function DetailNavigation({ language, onNavigate, scrollContainer }: Deta
           key={item.id}
           type="button"
           onClick={() => scrollToSection(item.id)}
-          className={`detail-navigation-card ${currentSection === item.id ? "detail-navigation-card-active" : ""}`}
+          className={`detail-navigation-item ${currentSection === item.id ? "detail-navigation-item-active" : ""}`}
           aria-current={currentSection === item.id ? "page" : undefined}
         >
-          <span className="detail-navigation-card-icon">{item.icon}</span>
-          <span className="detail-navigation-card-label">{item.label}</span>
-          <span className="detail-navigation-card-subtitle">{item.subtitle}</span>
+          {item.label}
+          {currentSection === item.id && (
+            <span className="detail-navigation-indicator" />
+          )}
         </button>
       ))}
     </nav>

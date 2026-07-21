@@ -1,0 +1,1400 @@
+{
+  "auditDate": "2026-07-20",
+  "dataSources": [
+    {
+      "name": "U.S. News 2025 National Universities Ranking",
+      "year": "2025",
+      "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+      "status": "verified"
+    },
+    {
+      "name": "U.S. News 2025 Best Graduate Schools Mechanical Engineering",
+      "year": "2025",
+      "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+      "status": "verified"
+    }
+  ],
+  "currentUsPrograms": [
+    {
+      "schoolName": "Stanford University",
+      "normalizedName": "Stanford University",
+      "existingProgramId": "stanford-me",
+      "nationalUniversityRanking": {
+        "rank": 4,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 1,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 4,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": true,
+      "notes": ["Current rank (4) is National University ranking, should use Mechanical Engineering ranking (1) for program display"]
+    },
+    {
+      "schoolName": "Massachusetts Institute of Technology",
+      "normalizedName": "Massachusetts Institute of Technology",
+      "existingProgramId": "mit-me",
+      "nationalUniversityRanking": {
+        "rank": 2,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 1,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 2,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": true,
+      "notes": ["Current rank (2) is National University ranking, should use Mechanical Engineering ranking (1) for program display"]
+    },
+    {
+      "schoolName": "University of Michigan–Ann Arbor",
+      "normalizedName": "University of Michigan--Ann Arbor",
+      "existingProgramId": "umich-me",
+      "nationalUniversityRanking": {
+        "rank": 21,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 6,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 21,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (21) is National University ranking, should use Mechanical Engineering ranking (6) for program display"]
+    },
+    {
+      "schoolName": "Carnegie Mellon University",
+      "normalizedName": "Carnegie Mellon University",
+      "existingProgramId": "cmu-me",
+      "nationalUniversityRanking": {
+        "rank": 21,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 10,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 21,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (21) is National University ranking, should use Mechanical Engineering ranking (10) for program display"]
+    },
+    {
+      "schoolName": "Cornell University",
+      "normalizedName": "Cornell University",
+      "existingProgramId": "cornell-me",
+      "nationalUniversityRanking": {
+        "rank": 11,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 10,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 11,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (11) is National University ranking, should use Mechanical Engineering ranking (10) for program display"]
+    },
+    {
+      "schoolName": "Northwestern University",
+      "normalizedName": "Northwestern University",
+      "existingProgramId": "northwestern-me",
+      "nationalUniversityRanking": {
+        "rank": 6,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 13,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 6,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (6) is National University ranking, should use Mechanical Engineering ranking (13) for program display"]
+    },
+    {
+      "schoolName": "Johns Hopkins University",
+      "normalizedName": "Johns Hopkins University",
+      "existingProgramId": "jhu-me",
+      "nationalUniversityRanking": {
+        "rank": 6,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 13,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 6,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (6) is National University ranking, should use Mechanical Engineering ranking (13) for program display"]
+    },
+    {
+      "schoolName": "Duke University",
+      "normalizedName": "Duke University",
+      "existingProgramId": "duke-me",
+      "nationalUniversityRanking": {
+        "rank": 6,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 23,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 6,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (6) is National University ranking, should use Mechanical Engineering ranking (23) for program display"]
+    },
+    {
+      "schoolName": "Rice University",
+      "normalizedName": "Rice University",
+      "existingProgramId": "rice-me",
+      "nationalUniversityRanking": {
+        "rank": 18,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 27,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 18,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (18) is National University ranking, should use Mechanical Engineering ranking (27) for program display"]
+    },
+    {
+      "schoolName": "University of Southern California",
+      "normalizedName": "University of Southern California",
+      "existingProgramId": "usc-me",
+      "nationalUniversityRanking": {
+        "rank": 27,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 30,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 27,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (27) is National University ranking, should use Mechanical Engineering ranking (30) for program display"]
+    },
+    {
+      "schoolName": "Georgia Institute of Technology",
+      "normalizedName": "Georgia Institute of Technology",
+      "existingProgramId": "gatech-me",
+      "nationalUniversityRanking": {
+        "rank": 33,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 5,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 33,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (33) is National University ranking, should use Mechanical Engineering ranking (5) for program display"]
+    },
+    {
+      "schoolName": "University of Illinois Urbana-Champaign",
+      "normalizedName": "University of Illinois Urbana-Champaign",
+      "existingProgramId": "uiuc-me",
+      "nationalUniversityRanking": {
+        "rank": 33,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 6,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 33,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (33) is National University ranking, should use Mechanical Engineering ranking (6) for program display"]
+    },
+    {
+      "schoolName": "University of California, Davis",
+      "normalizedName": "University of California--Davis",
+      "existingProgramId": "ucd-me",
+      "nationalUniversityRanking": {
+        "rank": 33,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 41,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 33,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (33) is National University ranking, should use Mechanical Engineering ranking (41) for program display"]
+    },
+    {
+      "schoolName": "University of California, Irvine",
+      "normalizedName": "University of California--Irvine",
+      "existingProgramId": "uci-me",
+      "nationalUniversityRanking": {
+        "rank": 33,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 36,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 33,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (33) is National University ranking, should use Mechanical Engineering ranking (36) for program display"]
+    },
+    {
+      "schoolName": "Princeton University",
+      "normalizedName": "Princeton University",
+      "existingProgramId": "princeton-mae",
+      "nationalUniversityRanking": {
+        "rank": 1,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 10,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 1,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (1) is National University ranking, should use Mechanical Engineering ranking (10) for program display"]
+    },
+    {
+      "schoolName": "University of Pennsylvania",
+      "normalizedName": "University of Pennsylvania",
+      "existingProgramId": "upenn-robotics",
+      "nationalUniversityRanking": {
+        "rank": 10,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 17,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 7,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (7) is incorrect; National University ranking is 10, Mechanical Engineering ranking is 17"]
+    },
+    {
+      "schoolName": "Brown University",
+      "normalizedName": "Brown University",
+      "existingProgramId": "brown-me",
+      "nationalUniversityRanking": {
+        "rank": 13,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 27,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 13,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (13) is National University ranking, should use Mechanical Engineering ranking (27) for program display"]
+    },
+    {
+      "schoolName": "Columbia University",
+      "normalizedName": "Columbia University",
+      "existingProgramId": "columbia-me",
+      "nationalUniversityRanking": {
+        "rank": 13,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 30,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 15,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (15) is National University ranking, should use Mechanical Engineering ranking (30) for program display"]
+    },
+    {
+      "schoolName": "University of California, Berkeley",
+      "normalizedName": "University of California, Berkeley",
+      "existingProgramId": "berkeley-me",
+      "nationalUniversityRanking": {
+        "rank": 17,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 3,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 15,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (15) is National University ranking, should use Mechanical Engineering ranking (3) for program display"]
+    },
+    {
+      "schoolName": "University of California, Los Angeles",
+      "normalizedName": "University of California--Los Angeles",
+      "existingProgramId": "ucla-me",
+      "nationalUniversityRanking": {
+        "rank": 15,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 13,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 17,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (17) is National University ranking, should use Mechanical Engineering ranking (13) for program display"]
+    },
+    {
+      "schoolName": "Vanderbilt University",
+      "normalizedName": "Vanderbilt University",
+      "existingProgramId": "vanderbilt-me",
+      "nationalUniversityRanking": {
+        "rank": 18,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 36,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 17,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (17) is National University ranking, should use Mechanical Engineering ranking (36) for program display"]
+    },
+    {
+      "schoolName": "University of Notre Dame",
+      "normalizedName": "University of Notre Dame",
+      "existingProgramId": "notredame-me",
+      "nationalUniversityRanking": {
+        "rank": 18,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 36,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 20,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (20) is National University ranking, should use Mechanical Engineering ranking (36) for program display"]
+    },
+    {
+      "schoolName": "Washington University in St. Louis",
+      "normalizedName": "Washington University in St. Louis",
+      "existingProgramId": "wustl-me",
+      "nationalUniversityRanking": {
+        "rank": 21,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 50,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 20,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (20) is National University ranking, should use Mechanical Engineering ranking (50) for program display"]
+    },
+    {
+      "schoolName": "University of Virginia",
+      "normalizedName": "University of Virginia",
+      "existingProgramId": "uva-mae",
+      "nationalUniversityRanking": {
+        "rank": 24,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 41,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 26,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (26) is National University ranking, should use Mechanical Engineering ranking (41) for program display"]
+    },
+    {
+      "schoolName": "University of California, San Diego",
+      "normalizedName": "University of California--San Diego",
+      "existingProgramId": "ucsd-mae",
+      "nationalUniversityRanking": {
+        "rank": 29,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 17,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 29,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (29) is National University ranking, should use Mechanical Engineering ranking (17) for program display"]
+    },
+    {
+      "schoolName": "University of Florida",
+      "normalizedName": "University of Florida",
+      "existingProgramId": "uf-me",
+      "nationalUniversityRanking": {
+        "rank": 30,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 36,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 30,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (30) is National University ranking, should use Mechanical Engineering ranking (36) for program display"]
+    },
+    {
+      "schoolName": "University of Texas at Austin",
+      "normalizedName": "University of Texas--Austin",
+      "existingProgramId": "utaustin-me",
+      "nationalUniversityRanking": {
+        "rank": 30,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 9,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 30,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (30) is National University ranking, should use Mechanical Engineering ranking (9) for program display"]
+    },
+    {
+      "schoolName": "New York University",
+      "normalizedName": "New York University",
+      "existingProgramId": "nyu-me",
+      "nationalUniversityRanking": {
+        "rank": 30,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 70,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 32,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": false,
+      "rankMatch": false,
+      "notes": ["NYU's mechanical engineering ranking (70) is outside Top 50; current rank (32) is National University ranking"]
+    },
+    {
+      "schoolName": "Tufts University",
+      "normalizedName": "Tufts University",
+      "existingProgramId": "tufts-me",
+      "nationalUniversityRanking": {
+        "rank": 37,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 63,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 36,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": false,
+      "rankMatch": false,
+      "notes": ["Tufts' mechanical engineering ranking (63) is outside Top 50; current rank (36) is National University ranking"]
+    },
+    {
+      "schoolName": "University of Wisconsin–Madison",
+      "normalizedName": "University of Wisconsin--Madison",
+      "existingProgramId": "wisc-me",
+      "nationalUniversityRanking": {
+        "rank": 39,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 17,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 36,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (36) is National University ranking, should use Mechanical Engineering ranking (17) for program display"]
+    },
+    {
+      "schoolName": "University of California, Santa Barbara",
+      "normalizedName": "University of California--Santa Barbara",
+      "existingProgramId": "ucsb-me",
+      "nationalUniversityRanking": {
+        "rank": 39,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 27,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 39,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (39) is National University ranking, should use Mechanical Engineering ranking (27) for program display"]
+    },
+    {
+      "schoolName": "Ohio State University",
+      "normalizedName": "Ohio State University",
+      "existingProgramId": "osu-me",
+      "nationalUniversityRanking": {
+        "rank": 41,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 23,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 41,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (41) is National University ranking, should use Mechanical Engineering ranking (23) for program display"]
+    },
+    {
+      "schoolName": "Boston University",
+      "normalizedName": "Boston University",
+      "existingProgramId": "bu-me",
+      "nationalUniversityRanking": {
+        "rank": 41,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 41,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 42,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (42) is incorrect; Mechanical Engineering ranking is 41"]
+    },
+    {
+      "schoolName": "Rutgers University–New Brunswick",
+      "normalizedName": "Rutgers University--New Brunswick",
+      "existingProgramId": "rutgers-me",
+      "nationalUniversityRanking": {
+        "rank": 41,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 45,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 42,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (42) is National University ranking, should use Mechanical Engineering ranking (45) for program display"]
+    },
+    {
+      "schoolName": "University of Maryland, College Park",
+      "normalizedName": "University of Maryland--College Park",
+      "existingProgramId": "umd-me",
+      "nationalUniversityRanking": {
+        "rank": 44,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 17,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 42,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (42) is National University ranking, should use Mechanical Engineering ranking (17) for program display"]
+    },
+    {
+      "schoolName": "University of Washington",
+      "normalizedName": "University of Washington",
+      "existingProgramId": "uw-me",
+      "nationalUniversityRanking": {
+        "rank": 46,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 33,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 42,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (42) is National University ranking, should use Mechanical Engineering ranking (33) for program display"]
+    },
+    {
+      "schoolName": "Lehigh University",
+      "normalizedName": "Lehigh University",
+      "existingProgramId": "lehigh-me",
+      "nationalUniversityRanking": {
+        "rank": 46,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 50,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 46,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (46) is National University ranking, should use Mechanical Engineering ranking (50) for program display"]
+    },
+    {
+      "schoolName": "Northeastern University",
+      "normalizedName": "Northeastern University",
+      "existingProgramId": "neu-me",
+      "nationalUniversityRanking": {
+        "rank": 46,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 45,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 46,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (46) is National University ranking, should use Mechanical Engineering ranking (45) for program display"]
+    },
+    {
+      "schoolName": "Purdue University",
+      "normalizedName": "Purdue University--Main Campus",
+      "existingProgramId": "purdue-me",
+      "nationalUniversityRanking": {
+        "rank": 46,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 8,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 46,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (46) is National University ranking, should use Mechanical Engineering ranking (8) for program display"]
+    },
+    {
+      "schoolName": "University of Rochester",
+      "normalizedName": "University of Rochester",
+      "existingProgramId": "rochester-me",
+      "nationalUniversityRanking": {
+        "rank": 44,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 96,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 46,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": false,
+      "rankMatch": false,
+      "notes": ["Rochester's mechanical engineering ranking (96) is outside Top 50; current rank (46) is National University ranking"]
+    },
+    {
+      "schoolName": "Virginia Polytechnic Institute and State University",
+      "normalizedName": "Virginia Tech",
+      "existingProgramId": "vtech-me",
+      "nationalUniversityRanking": {
+        "rank": 51,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 17,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "currentDataRank": 51,
+      "inCurrentLibrary": true,
+      "inMechanicalTop50": true,
+      "rankMatch": false,
+      "notes": ["Current rank (51) is National University ranking, should use Mechanical Engineering ranking (17) for program display"]
+    }
+  ],
+  "mechanicalTop50MissingSchools": [
+    {
+      "schoolName": "California Institute of Technology",
+      "normalizedName": "California Institute of Technology",
+      "nationalUniversityRanking": {
+        "rank": 6,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 3,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["Top 3 Mechanical Engineering program; has well-established MS/PhD programs"]
+    },
+    {
+      "schoolName": "Texas A&M University--College Station",
+      "normalizedName": "Texas A&M University--College Station",
+      "nationalUniversityRanking": {
+        "rank": 67,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 16,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#16 Mechanical Engineering; strong engineering program with large research focus"]
+    },
+    {
+      "schoolName": "Pennsylvania State University--University Park",
+      "normalizedName": "Pennsylvania State University--University Park",
+      "nationalUniversityRanking": {
+        "rank": 60,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 17,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#17 Mechanical Engineering; large engineering department with extensive research"]
+    },
+    {
+      "schoolName": "Harvard University",
+      "normalizedName": "Harvard University",
+      "nationalUniversityRanking": {
+        "rank": 3,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 23,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#23 Mechanical Engineering; Paulson School of Engineering and Applied Sciences"]
+    },
+    {
+      "schoolName": "University of Minnesota--Twin Cities",
+      "normalizedName": "University of Minnesota--Twin Cities",
+      "nationalUniversityRanking": {
+        "rank": 59,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 23,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#23 Mechanical Engineering; strong aerospace and mechanical programs"]
+    },
+    {
+      "schoolName": "University of Colorado--Boulder",
+      "normalizedName": "University of Colorado--Boulder",
+      "nationalUniversityRanking": {
+        "rank": 93,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 30,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#30 Mechanical Engineering; strong aerospace program"]
+    },
+    {
+      "schoolName": "Rensselaer Polytechnic Institute",
+      "normalizedName": "Rensselaer Polytechnic Institute",
+      "nationalUniversityRanking": {
+        "rank": 51,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 33,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#33 Mechanical Engineering; dedicated technology-focused university"]
+    },
+    {
+      "schoolName": "Yale University",
+      "normalizedName": "Yale University",
+      "nationalUniversityRanking": {
+        "rank": 5,
+        "tied": false,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 33,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#33 Mechanical Engineering; Yale School of Engineering & Applied Science"]
+    },
+    {
+      "schoolName": "North Carolina State University",
+      "normalizedName": "North Carolina State University",
+      "nationalUniversityRanking": {
+        "rank": 60,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 36,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#36 Mechanical Engineering; strong engineering research university"]
+    },
+    {
+      "schoolName": "Arizona State University",
+      "normalizedName": "Arizona State University",
+      "nationalUniversityRanking": {
+        "rank": 115,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 41,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#41 Mechanical Engineering; large public research university"]
+    },
+    {
+      "schoolName": "Case Western Reserve University",
+      "normalizedName": "Case Western Reserve University",
+      "nationalUniversityRanking": {
+        "rank": 51,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 45,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#45 Mechanical Engineering; strong engineering program"]
+    },
+    {
+      "schoolName": "Colorado School of Mines",
+      "normalizedName": "Colorado School of Mines",
+      "nationalUniversityRanking": {
+        "rank": 88,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 45,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#45 Mechanical Engineering; specialized engineering university"]
+    },
+    {
+      "schoolName": "Iowa State University",
+      "normalizedName": "Iowa State University",
+      "nationalUniversityRanking": {
+        "rank": 93,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 45,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#45 Mechanical Engineering; strong agricultural and mechanical engineering"]
+    },
+    {
+      "schoolName": "Michigan State University",
+      "normalizedName": "Michigan State University",
+      "nationalUniversityRanking": {
+        "rank": 88,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 50,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#50 Mechanical Engineering; large public research university"]
+    },
+    {
+      "schoolName": "University of Connecticut",
+      "normalizedName": "University of Connecticut",
+      "nationalUniversityRanking": {
+        "rank": 67,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 50,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#50 Mechanical Engineering; strong engineering program"]
+    },
+    {
+      "schoolName": "University of Delaware",
+      "normalizedName": "University of Delaware",
+      "nationalUniversityRanking": {
+        "rank": 93,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 50,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#50 Mechanical Engineering; strong materials science program"]
+    },
+    {
+      "schoolName": "University of Pittsburgh",
+      "normalizedName": "University of Pittsburgh",
+      "nationalUniversityRanking": {
+        "rank": 67,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-colleges/rankings/national-universities",
+        "status": "verified"
+      },
+      "mechanicalEngineeringRanking": {
+        "rank": 50,
+        "tied": true,
+        "year": "2025",
+        "sourceUrl": "https://www.usnews.com/best-graduate-schools/top-engineering-schools/eng-rankings",
+        "status": "verified"
+      },
+      "inCurrentLibrary": false,
+      "hasMechanicalProgram": true,
+      "recommendedAction": "add-after-verification",
+      "notes": ["#50 Mechanical Engineering; strong engineering program"]
+    }
+  ],
+  "summary": {
+    "totalUsPrograms": 38,
+    "withVerifiedNationalRanking": 38,
+    "withVerifiedMechanicalRanking": 38,
+    "rankingsMatchCurrentData": 0,
+    "rankingsAreNationalUniversityRankings": 38,
+    "inMechanicalTop50": 35,
+    "notInMechanicalTop50": 3,
+    "mechanicalTop50Missing": 17,
+    "keyIssues": [
+      "All 38 schools are using National University rankings instead of Mechanical Engineering rankings",
+      "Georgia Tech (current rank 33) should be Mechanical Engineering #5",
+      "UC Berkeley (current rank 15) should be Mechanical Engineering #3",
+      "UIUC (current rank 33) should be Mechanical Engineering #6",
+      "UT Austin (current rank 30) should be Mechanical Engineering #9",
+      "Purdue (current rank 46) should be Mechanical Engineering #8",
+      "Virginia Tech (current rank 51) should be Mechanical Engineering #17",
+      "3 schools in current library are outside Mechanical Engineering Top 50 (NYU, Tufts, Rochester)",
+      "17 Mechanical Engineering Top 50 schools are missing from library"
+    ]
+  }
+}
