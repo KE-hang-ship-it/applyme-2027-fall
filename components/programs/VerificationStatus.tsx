@@ -1,8 +1,8 @@
 import type { FieldVerification } from "@/types/application";
 
 const labels = {
-  zh: { verified: "已核实", pending: "待核实", "not-published": "尚未公布", historical: "历史参考" },
-  en: { verified: "Verified", pending: "Pending verification", "not-published": "Not yet published", historical: "Historical reference" },
+  zh: { verified: "已核实", pending: "待核实", "not-published": "尚未公布", historical: "历史参考", "not-found": "未找到" },
+  en: { verified: "Verified", pending: "Pending verification", "not-published": "Not yet published", historical: "Historical reference", "not-found": "Not found" },
 } as const;
 
 export function VerificationStatus({ verification, language }: { verification: FieldVerification; language: "zh" | "en" }) {
