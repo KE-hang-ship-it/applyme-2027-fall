@@ -1,13 +1,12 @@
 "use client";
 
-import type { Program } from "@/types/application";
+import type { ProgramV2 } from "@/types/application";
 import { SchoolLogo } from "@/components/SchoolLogo";
-import { CompareButton } from "./CompareButton";
 import { RankingBadge } from "./RankingBadge";
-import { VerificationStatus } from "./VerificationStatus";
+import { fieldVerification } from "@/lib/program-detail-view";
 
 interface ProgramDetailHeaderProps {
-  program: Program;
+  program: ProgramV2;
   language: "zh" | "en";
   isSaved?: boolean;
   isInSchoolList?: boolean;
@@ -65,7 +64,22 @@ const deadlineInfo = (deadline: string) => {
   return { label: `${days} Days Left`, days, tone: days > 60 ? "safe" : days >= 30 ? "watch" : days >= 15 ? "soon" : "urgent" };
 };
 
-function getDisplayStatus(program: Program, field: "deadline" | "duration" | "tuition"): { value: string; status: "confirmed" | "not-published" | "reference" | "empty" } {
+function getDisplayStatus(program: ProgramV2, field: "deadline" | "duration" | "tuition"): { value: string; status: "confirmed" | "not-published" | "reference" | "empty" } {
+  const verification = fieldVerification(program, field);
+  if (verification) {
+    if (verification.status === "not-found" || verification.status === "not-published") {
+      return { value: "", status: verification.status === "not-published" ? "not-published" : "empty" };
+    }
+    const deadline = program.applicationRequirements?.applicationRound?.[0]?.date || program.applicationRequirements?.deadline || "";
+    const duration = program.applicationRequirements?.duration || "";
+    const tuition = program.tuition?.amount == null
+      ? program.tuition?.displayText || ""
+      : `${program.tuition.currency} ${program.tuition.amount.toLocaleString()} · ${program.tuition.year}`;
+    return {
+      value: field === "deadline" ? deadline : field === "duration" ? duration : tuition,
+      status: verification.status === "verified" ? "confirmed" : "reference",
+    };
+  }
   const values: Record<string, { value: string; status: string }> = {
     deadline: { value: program.deadline, status: program.verified === "已核实" ? "confirmed" : program.deadline === "待公布" ? "not-published" : "reference" },
     duration: { value: program.duration, status: program.verified === "已核实" ? "confirmed" : "reference" },
@@ -89,8 +103,6 @@ export function ProgramDetailHeader({
   onToggleCompare,
 }: ProgramDetailHeaderProps) {
   const texts = t[language];
-  const deadlineData = deadlineInfo(program.deadline);
-
   const nationalRanking = program.rank
     ? {
         source: "US News" as const,
@@ -106,6 +118,10 @@ export function ProgramDetailHeader({
     : null;
 
   const deadlineDisplay = getDisplayStatus(program, "deadline");
+  const deadlineVerification = fieldVerification(program, "deadline");
+  const deadlineData = deadlineVerification?.status === "verified"
+    ? deadlineInfo(deadlineDisplay.value)
+    : { label: "", days: null, tone: "unknown" };
   const durationDisplay = getDisplayStatus(program, "duration");
   const tuitionDisplay = getDisplayStatus(program, "tuition");
 
@@ -172,6 +188,18 @@ export function ProgramDetailHeader({
             }}>
               {program.degree || texts.notAvailable}
             </span>
+            {program.programStatus === "REVIEW" && (
+              <span style={{
+                background: "#fff3cd",
+                color: "#856404",
+                borderRadius: "999px",
+                padding: "5px 12px",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}>
+                REVIEW
+              </span>
+            )}
             <span style={{ fontSize: "14px", color: "var(--subtle)", fontWeight: 500 }}>
               {program.field || ""}
             </span>

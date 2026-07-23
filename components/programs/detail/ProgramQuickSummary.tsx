@@ -1,11 +1,12 @@
 "use client";
 
-import type { Program } from "@/types/application";
+import type { ProgramV2 } from "@/types/application";
 import { SchoolLogo } from "@/components/SchoolLogo";
 import { RankingBadge } from "../RankingBadge";
+import { fieldVerification, NO_OFFICIAL_DATA, verificationText } from "@/lib/program-detail-view";
 
 type ProgramQuickSummaryProps = {
-  program: Program;
+  program: ProgramV2;
   language: "zh" | "en";
 };
 
@@ -36,7 +37,7 @@ const t = {
   },
 };
 
-function getQuickSummary(program: Program, language: "zh" | "en"): string {
+function getQuickSummary(program: ProgramV2, language: "zh" | "en"): string {
   const hasDegree = !!program.degree;
   const hasTracks = program.tracks && program.tracks.length > 0;
   const hasDuration = !!program.duration;
@@ -60,6 +61,21 @@ function getQuickSummary(program: Program, language: "zh" | "en"): string {
 
 export function ProgramQuickSummary({ program, language }: ProgramQuickSummaryProps) {
   const texts = t[language];
+  const duration = program.applicationRequirements?.duration || program.duration || NO_OFFICIAL_DATA[language];
+  const deadlineVerification = fieldVerification(program, "deadline");
+  const deadline = program.applicationRequirements?.applicationRound?.[0]?.date ||
+    program.applicationRequirements?.deadline ||
+    program.deadline ||
+    NO_OFFICIAL_DATA[language];
+  const deadlineDisplay = deadlineVerification
+    ? `${deadline} · ${verificationText(deadlineVerification.status, language)}`
+    : deadline;
+  const tuitionVerification = fieldVerification(program, "tuition");
+  const tuition = tuitionVerification?.status === "not-found"
+    ? (language === "zh" ? "未找到项目专属官方学费" : "No program-specific official tuition found")
+    : program.tuition?.amount != null
+      ? `${program.tuition.currency} ${program.tuition.amount.toLocaleString()} · ${program.tuition.year}`
+      : program.tuition?.displayText || program.tuitionReference?.amount || NO_OFFICIAL_DATA[language];
   
   const nationalRanking = program.nationalUniversityRanking || (program.rank
     ? {
@@ -100,7 +116,7 @@ export function ProgramQuickSummary({ program, language }: ProgramQuickSummaryPr
         </div>
         <div className="program-quick-summary-item">
           <span className="program-quick-summary-label">{texts.duration}</span>
-          <b className="program-quick-summary-value">{program.duration || "-"}</b>
+          <b className="program-quick-summary-value">{duration}</b>
         </div>
         <div className="program-quick-summary-item">
           <span className="program-quick-summary-label">{texts.intake}</span>
@@ -108,12 +124,12 @@ export function ProgramQuickSummary({ program, language }: ProgramQuickSummaryPr
         </div>
         <div className="program-quick-summary-item">
           <span className="program-quick-summary-label">{texts.deadline}</span>
-          <b className="program-quick-summary-value">{program.deadline || "-"}</b>
+          <b className="program-quick-summary-value">{deadlineDisplay}</b>
         </div>
         <div className="program-quick-summary-item">
           <span className="program-quick-summary-label">{texts.tuition}</span>
           <b className="program-quick-summary-value">
-            {program.tuitionReference?.amount || "-"}
+            {tuition}
           </b>
         </div>
       </div>
@@ -133,9 +149,9 @@ export function ProgramQuickSummary({ program, language }: ProgramQuickSummaryPr
         )}
       </div>
 
-      {program.programUrl && (
+      {(program.sources?.programWebsite || program.programUrl) && (
         <a
-          href={program.programUrl}
+          href={program.sources?.programWebsite || program.programUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="program-quick-summary-official-link"

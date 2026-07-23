@@ -1,132 +1,93 @@
 "use client";
 
-import type { Program } from "@/types/application";
-import { DataStatusBadge, getDataStatus } from "../DataStatusBadge";
+import type { FieldVerificationV2, ProgramV2, ProgramVerificationField } from "@/types/application";
+import {
+  fieldVerification,
+  formatDocument,
+  formatGRE,
+  formatLanguageRequirement,
+  formatMoney,
+  NO_OFFICIAL_DATA,
+} from "@/lib/program-detail-view";
+import { VerificationStatus } from "../VerificationStatus";
 
-type ProgramAdmissionsProps = {
-  program: Program;
-  language: "zh" | "en";
-};
+type Props = { program: ProgramV2; language: "zh" | "en" };
+type Row = { label: string; value: string; field: ProgramVerificationField };
 
-const t = {
-  zh: {
-    title: "怎么申请",
-    applicationOpen: "申请开放时间",
-    deadline: "截止日期",
-    applicationFee: "申请费",
-    transcripts: "成绩单",
-    resume: "简历",
-    sop: "Statement of Purpose",
-    ps: "Personal Statement",
-    recommendations: "推荐信",
-    gre: "GRE",
-    toefl: "TOEFL",
-    ielts: "IELTS",
-    portfolio: "作品集",
-    applyNow: "官方申请入口",
-    verified: "已核实",
-    notVerified: "暂未核实",
-    notRequired: "不要求",
-    optional: "可选",
-  },
-  en: {
-    title: "How to Apply",
-    applicationOpen: "Application Opens",
-    deadline: "Deadline",
-    applicationFee: "Application Fee",
-    transcripts: "Transcripts",
-    resume: "Resume",
-    sop: "Statement of Purpose",
-    ps: "Personal Statement",
-    recommendations: "Recommendations",
-    gre: "GRE",
-    toefl: "TOEFL",
-    ielts: "IELTS",
-    portfolio: "Portfolio",
-    applyNow: "Apply Now",
-    verified: "Verified",
-    notVerified: "Not verified",
-    notRequired: "Not required",
-    optional: "Optional",
-  },
-};
+export function ProgramAdmissions({ program, language }: Props) {
+  const zh = language === "zh";
+  const req = program.applicationRequirements;
+  const rows: Row[] = [];
+  const deadlines = req?.applicationRound?.length
+    ? req.applicationRound
+    : req?.deadline
+      ? [{ date: req.deadline, intake: req.applicationCycle }]
+      : [];
 
-type MaterialStatus = "verified" | "not-verified" | "not-required" | "optional";
+  for (const deadline of deadlines) {
+    const labels = [
+      zh ? "截止日期" : "Deadline",
+      deadline.label || deadline.round,
+      deadline.deadlineType,
+      deadline.intake,
+    ].filter(Boolean);
+    rows.push({ label: labels.join(" · "), value: deadline.date || NO_OFFICIAL_DATA[language], field: "deadline" });
+  }
+  if (!deadlines.length) {
+    rows.push({
+      label: zh ? "截止日期" : "Deadline",
+      value: fieldVerification(program, "deadline") ? NO_OFFICIAL_DATA[language] : program.deadline || NO_OFFICIAL_DATA[language],
+      field: "deadline",
+    });
+  }
 
-interface ApplicationMaterial {
-  label: string;
-  value: string;
-  status: MaterialStatus;
-}
+  rows.push(
+    { label: zh ? "申请费" : "Application Fee", value: formatMoney(req?.applicationFee, language), field: "applicationFee" },
+    { label: "GRE", value: formatGRE(req?.gre, language), field: "gre" },
+    { label: "TOEFL", value: formatLanguageRequirement(req?.toefl, language), field: "toefl" },
+    { label: "IELTS", value: formatLanguageRequirement(req?.ielts, language), field: "ielts" },
+    { label: zh ? "推荐信" : "Recommendations", value: formatDocument(req?.letters, language), field: "letters" },
+    { label: "CV / Resume", value: formatDocument(req?.cv, language), field: "cv" },
+    { label: "SOP / Personal Statement", value: formatDocument(req?.sop, language), field: "sop" },
+  );
 
-function getApplicationMaterials(program: Program, language: "zh" | "en"): ApplicationMaterial[] {
-  const texts = t[language];
-  return [
-    { label: texts.applicationOpen, value: "-", status: "not-verified" },
-    { label: texts.deadline, value: program.deadline || texts.notVerified, status: program.verified === "已核实" ? "verified" : "not-verified" },
-    { label: texts.applicationFee, value: "-", status: "not-verified" },
-    { label: texts.transcripts, value: texts.verified, status: "verified" },
-    { label: texts.resume, value: program.cv || texts.notVerified, status: program.cv ? "verified" : "not-verified" },
-    { label: texts.sop, value: program.sop || texts.notVerified, status: program.sop ? "verified" : "not-verified" },
-    { label: texts.recommendations, value: program.letters || texts.notVerified, status: program.letters ? "verified" : "not-verified" },
-    { label: texts.gre, value: program.gre || texts.notVerified, status: program.gre ? "verified" : "not-verified" },
-    { label: texts.toefl, value: "-", status: "not-verified" },
-    { label: texts.ielts, value: "-", status: "not-verified" },
-    { label: texts.portfolio, value: texts.notRequired, status: "not-required" },
-  ];
-}
-
-export function ProgramAdmissions({ program, language }: ProgramAdmissionsProps) {
-  const texts = t[language];
-  const materials = getApplicationMaterials(program, language);
-
-  const statusStyles: Record<MaterialStatus, { bg: string; text: string; border: string }> = {
-    verified: { bg: "#e5f5ea", text: "#287044", border: "#a3d9b8" },
-    "not-verified": { bg: "#fff3cd", text: "#856404", border: "#ffeeba" },
-    "not-required": { bg: "#f8f9fa", text: "#6c757d", border: "#dee2e6" },
-    optional: { bg: "#d1ecf1", text: "#0c5460", border: "#bee5eb" },
-  };
+  const sectionVerification =
+    rows.map(row => fieldVerification(program, row.field)).find(Boolean) ??
+    ({ status: "pending" } satisfies FieldVerificationV2);
+  const applicationUrl = program.sources?.applicationWebsite || program.applicationUrl;
 
   return (
     <section id="admissions" className="program-detail-section program-admissions">
       <div className="program-detail-section-header">
-        <span className="program-detail-section-badge">{texts.title}</span>
-        <h2 className="program-detail-section-title">{texts.title}</h2>
-        <span className="program-detail-section-status">部分核实</span>
+        <span className="program-detail-section-badge">{zh ? "申请要求" : "Admissions"}</span>
+        <h2 className="program-detail-section-title">{zh ? "申请要求" : "Admissions"}</h2>
+        <VerificationStatus verification={sectionVerification} language={language} />
       </div>
-      
       <div className="program-admissions-materials">
-        {materials.map((material, index) => {
-          const style = statusStyles[material.status];
+        {rows.map((row, index) => {
+          const verification = fieldVerification(program, row.field) ?? { status: "pending" as const };
           return (
-            <div key={index} className="program-admissions-material">
-              <span className="program-admissions-material-label">{material.label}</span>
+            <div key={`${row.field}-${index}`} className="program-admissions-material">
+              <span className="program-admissions-material-label">{row.label}</span>
               <div className="program-admissions-material-value-row">
-                <b className="program-admissions-material-value">{material.value}</b>
-                <span
-                  className="program-admissions-material-status"
-                  style={{
-                    backgroundColor: style.bg,
-                    color: style.text,
-                    borderColor: style.border,
-                  }}
-                >
-                  {texts[material.status.replace("-", "") as keyof typeof texts]}
-                </span>
+                <b className="program-admissions-material-value">{row.value}</b>
+                <VerificationStatus verification={verification} language={language} />
               </div>
+              {verification.sourceUrl && (
+                <a href={verification.sourceUrl} target="_blank" rel="noopener noreferrer" className="program-sources-link-url">
+                  {zh ? "官方来源" : "Official source"}
+                </a>
+              )}
+              {verification.lastVerifiedAt && (
+                <small>{zh ? "核查日期" : "Checked"}: {verification.lastVerifiedAt}</small>
+              )}
             </div>
           );
         })}
       </div>
-
-      {program.applicationUrl && (
-        <a
-          href={program.applicationUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="program-admissions-apply-link"
-        >
-          {texts.applyNow} ↗
+      {applicationUrl && (
+        <a href={applicationUrl} target="_blank" rel="noopener noreferrer" className="program-admissions-apply-link">
+          {zh ? "官方申请入口" : "Official application"} →
         </a>
       )}
     </section>

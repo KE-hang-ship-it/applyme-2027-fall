@@ -15,6 +15,8 @@ const overrideById = new Map(
   TOP20_PROGRAM_V2_OVERRIDES.map((override) => [override.id, override] as const),
 );
 
+const SPLIT_LEGACY_IDS = new Set(["princeton-mae", "uva-mae", "rice-me"]);
+
 const PROGRAM_VERIFICATION_FIELDS = new Set<ProgramVerificationField>([
   "programWebsite",
   "deadline",
@@ -30,6 +32,10 @@ const PROGRAM_VERIFICATION_FIELDS = new Set<ProgramVerificationField>([
   "tuition",
   "ranking",
   "curriculum",
+  "specializations",
+  "bestFit",
+  "highlights",
+  "riskFactors",
   "backgroundRequirement",
   "applicationLink",
 ]);
@@ -134,4 +140,30 @@ export function getTop20ProgramV2Override(
   programV2Id: string,
 ): ProgramV2Override | undefined {
   return overrideById.get(programV2Id);
+}
+
+/**
+ * Returns display-only detail data while preserving the legacy identity used by
+ * favorites, school lists, notes, comparisons, and local storage.
+ */
+export function getProgramDetailView(legacy: Program): ProgramV2 {
+  if (SPLIT_LEGACY_IDS.has(legacy.id)) return toProgramV2(legacy);
+
+  const migratedIds = getProgramV2Ids(legacy.id);
+  if (migratedIds.length !== 1) return toProgramV2(legacy);
+
+  const detail = adaptProgramToV2(legacy, migratedIds[0]);
+  const insights = legacy.id === "notredame-me"
+    ? {
+        ...detail.insights,
+        riskFactors: [
+          "当前未确认存在独立面向外部申请者的 Mechanical Engineering MS",
+        ],
+      }
+    : detail.insights;
+  return {
+    ...detail,
+    id: legacy.id,
+    insights,
+  };
 }

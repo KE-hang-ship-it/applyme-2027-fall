@@ -28,6 +28,7 @@ import { ProgramResearchResources } from "@/components/programs/detail/ProgramRe
 import { ProgramSources } from "@/components/programs/detail/ProgramSources";
 import { getFieldVerification, overallVerification } from "@/lib/program-status";
 import { getTrustedRanking, getRankingByType, getRankingValue, type RankingType } from "@/lib/ranking-display";
+import { getProgramDetailView } from "@/lib/program-v2-adapter";
 import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMode, View, SchoolListCategory, SchoolListItem } from "@/types/application";
 import { US_MECHANICAL_PROGRAMS_ADDED } from "@/data/us-mechanical-programs-added";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -373,6 +374,10 @@ export default function Home() {
   const [rankingType,setRankingType] = useState<RankingType>("national-university");
   const [sortOrder,setSortOrder] = useState<"default"|"best-rank-first"|"worst-rank-first">("default");
   const [selected,setSelected] = useState<Program | null>(null);
+  const selectedDetailProgram = useMemo(
+    () => selected ? getProgramDetailView(selected) : null,
+    [selected],
+  );
   const [expanded,setExpanded] = useState<Record<string,boolean>>({requirements:true,overview:false,costs:false,courses:false,notes:false});
   const [selectedCourse,setSelectedCourse] = useState<{course:string;track:string;program:Program}|null>(null);
   const [compare,setCompare] = useState<string[]>([]);
@@ -698,11 +703,11 @@ export default function Home() {
 
     </section>
 
-    {selected && <div className="overlay" onClick={()=>setSelected(null)}>
+    {selected && selectedDetailProgram && <div className="overlay" onClick={()=>setSelected(null)}>
       <section className="drawer school-detail-drawer" onClick={e=>e.stopPropagation()} ref={drawerRef} style={{ overflowY: "auto", maxHeight: "100vh" }}>
         <button className="close hero-close" aria-label={t.close} onClick={()=>setSelected(null)}>×</button>
         <ProgramDetailHeader
-          program={selected}
+          program={selectedDetailProgram}
           language={language}
           isSaved={isFavorite(selected.id)}
           isInSchoolList={isInSchoolList(selected.id)}
@@ -723,35 +728,35 @@ export default function Home() {
         />
         <DetailNavigation language={language} onNavigate={(id) => setExpanded(prev => ({ ...prev, [id]: true }))} scrollContainer={drawerRef.current} />
         <div className="detail-body">
-          <ProgramQuickSummary program={selected} language={language} />
+          <ProgramQuickSummary program={selectedDetailProgram} language={language} />
           
-          <ProgramEligibility program={selected} language={language} />
+          <ProgramEligibility program={selectedDetailProgram} language={language} />
           
           <ProgramDifficultyReference 
-            program={selected} 
+            program={selectedDetailProgram}
             language={language} 
             userCategory={schoolListItems.find(item => item.programId === selected.id)?.category} 
           />
           
           <ProgramCurriculum 
-            program={selected} 
+            program={selectedDetailProgram}
             language={language}
             onCourseClick={(track, course) => setSelectedCourse({ course, track, program: selected })}
           />
           
-          <ProgramAdmissions program={selected} language={language} />
+          <ProgramAdmissions program={selectedDetailProgram} language={language} />
           
-          <ProgramCosts program={selected} language={language} />
+          <ProgramCosts program={selectedDetailProgram} language={language} />
           
-          <ProgramHighlights program={selected} language={language} />
+          <ProgramHighlights program={selectedDetailProgram} language={language} />
           
           <ProgramResearchResources 
-            program={selected} 
+            program={selectedDetailProgram}
             language={language}
             onCourseClick={(track, course) => setSelectedCourse({ course, track, program: selected })}
           />
           
-          <ProgramSources program={selected} language={language} />
+          <ProgramSources program={selectedDetailProgram} language={language} />
 
           <section id="notes" className="program-detail-section program-notes">
             <div className="program-detail-section-header">

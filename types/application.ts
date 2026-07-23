@@ -304,6 +304,10 @@ export type ProgramVerificationField =
   | "tuition"
   | "ranking"
   | "curriculum"
+  | "specializations"
+  | "bestFit"
+  | "highlights"
+  | "riskFactors"
   | "backgroundRequirement"
   | "applicationLink";
 
