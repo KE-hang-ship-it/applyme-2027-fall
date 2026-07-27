@@ -260,7 +260,18 @@ const OFFICIAL_LINKS:Record<string,Pick<Program,"departmentUrl"|"programUrl"|"ap
 const ALL_PROGRAMS = [...PROGRAMS, ...EXTRA_PROGRAMS, ...REGIONAL_PROGRAMS, ...EXPANDED_PROGRAMS, ...US_MECHANICAL_PROGRAMS_ADDED].map(program=>({...program,regionalOrder:program.regionalOrder??program.rank,regionalOrderLabel:program.regionalOrderLabel||"分区参考序号",...OFFICIAL_LINKS[program.id]})).sort((a,b)=>(a.rankValue??a.regionalOrder??999)-(b.rankValue??b.regionalOrder??999)||a.school.localeCompare(b.school));
 const PROGRAM_BY_ID = new Map(ALL_PROGRAMS.map(program=>[program.id,program]));
 
-const dateLabel = (date: string) => date === "待公布" ? date : new Date(`${date}T00:00:00`).toLocaleDateString("zh-CN", {year:"numeric",month:"short",day:"numeric"});
+const notPublishedLabel = (language: "zh" | "en") => language === "en" ? "Not published" : "待公布";
+const parseDeadline = (date: string) => {
+  if (!date || /待公布|not published/i.test(date)) return null;
+  const parsed = new Date(`${date}T00:00:00`);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+};
+const dateLabel = (date: string, language: "zh" | "en" = "zh") => {
+  const parsed = parseDeadline(date);
+  return parsed
+    ? parsed.toLocaleDateString(language === "en" ? "en-US" : "zh-CN", {year:"numeric",month:"short",day:"numeric"})
+    : notPublishedLabel(language);
+};
 const courseDescription = (course:string) => {
   const name = course.toLowerCase();
   if (name.includes("robot")) return "围绕机器人建模、运动学、动力学、感知、规划与控制展开，通常包含算法作业或系统项目。";
@@ -298,9 +309,11 @@ const LOCATION_BY_SCHOOL: Record<string,string> = {
   "Adelaide University":"Adelaide, South Australia", "Australian National University":"Canberra, ACT", "University of Melbourne":"Melbourne, Victoria", "Monash University":"Melbourne, Victoria", "University of New South Wales":"Sydney, New South Wales", "University of Queensland":"Brisbane, Queensland", "University of Sydney":"Sydney, New South Wales", "University of Western Australia":"Perth, Western Australia"
 };
 const APP_FEE_BY_REGION: Record<string,string> = {美国:"US$75–150",香港:"HK$300–600",加拿大:"C$125–170",英国:"£0–100",澳大利亚:"A$0–150"};
-const deadlineInfo = (deadline:string) => {
-  if (deadline === "待公布") return {label:"待公布",days:null,tone:"unknown"};
-  const days = Math.ceil((new Date(`${deadline}T23:59:59`).getTime()-Date.now())/86400000);
+const deadlineInfo = (deadline:string, language: "zh" | "en" = "zh") => {
+  const parsed = parseDeadline(deadline);
+  if (!parsed) return {label:notPublishedLabel(language),days:null,tone:"unknown"};
+  parsed.setHours(23,59,59,999);
+  const days = Math.ceil((parsed.getTime()-Date.now())/86400000);
   if (days < 0) return {label:"Closed",days,tone:"expired"};
   return {label:`${days} Days Left`,days,tone:days>60?"safe":days>=30?"watch":days>=15?"soon":"urgent"};
 };
@@ -524,7 +537,7 @@ export default function Home() {
         <section className="command-overview"><div><span>APPLICATION COMMAND CENTER</span><h2>{en?"2027 Fall Application Hub":"2027 Fall 申请控制台"}</h2><p>{en?"Keep saved programs, material progress and reminders in one place.":"集中查看收藏项目、材料进度和近期提醒。"}</p></div><div className="command-metrics"><button onClick={()=>setView("favorites")}><small>{en?"Favorites":"收藏"}</small><b>{favoriteIds.length}</b></button><button onClick={()=>setView("schoolList")}><small>{en?"School List":"选校名单"}</small><b>{schoolListItems.length}</b></button><button onClick={()=>setView("mine")}><small>{en?"Materials Done":"材料完成"}</small><b>{materialCompleted}/{Object.keys(materials).length}</b></button><button onClick={()=>setView("mine")}><small>{en?"Reminders":"日历提醒"}</small><b>{reminderNotes.length}</b></button></div></section>
         <section className="today-focus"><div><span className="eyebrow">TODAY'S FOCUS</span><h3>{en?`Start with: ${materialName(nextMaterial)}`:`今天先推进：${nextMaterial}`}</h3><p>{en?"Spend 30 minutes on a small draft and keep moving forward.":"用 30 分钟完成一个小版本，让申请准备持续向前。"}</p></div><div><button onClick={()=>{setMaterials(old=>({...old,[nextMaterial]:"准备中"}));setToast(`${nextMaterial} 已标记为准备中`)}}>{en?"Start":"开始处理"}</button><button onClick={()=>setView("mine")}>{en?"Open materials":"打开我的材料"}</button></div></section>
         <div className="dashboard-heading"><div><span className="eyebrow">MY SCHOOL LIST</span><h2>{en?"School List Countdowns":"选校名单倒计时"}</h2></div><button onClick={()=>setView("schoolList")}>{en?"Manage school list":"管理选校名单"} →</button></div>
-        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p} size="small"/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline)}</small></button>}):<EmptyState title={en?"No published deadlines in school list":"选校名单暂时没有已公布的截止日期"} description={en?"Add programs to your school list to see countdowns here.":"从项目库添加学校到选校名单后，这里显示你的倒计时。"} actionLabel={en?"Browse programs":"浏览项目"} onAction={()=>setView("schools")}/>}</div>
+        <div className="deadline-grid">{upcoming.length?upcoming.map(p=>{const d=deadlineInfo(p.deadline,language);return <button className="deadline-card" key={p.id} onClick={()=>setSelected(p)}><SchoolLogo program={p} size="small"/><div><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>{p.degree} · {p.program}</span></div><em className={`countdown ${d.tone}`}>{d.label}</em><small>{dateLabel(p.deadline,language)}</small></button>}):<EmptyState title={en?"No published deadlines in school list":"选校名单暂时没有已公布的截止日期"} description={en?"Add programs to your school list to see countdowns here.":"从项目库添加学校到选校名单后，这里显示你的倒计时。"} actionLabel={en?"Browse programs":"浏览项目"} onAction={()=>setView("schools")}/>}</div>
         <div className="dashboard-heading reminder-heading"><div><span className="eyebrow">CALENDAR REMINDERS</span><h2>{en?"My Calendar Reminders":"我的日历提醒"}</h2></div><button onClick={()=>setView("mine")}>{en?"Open calendar":"打开日历"} →</button></div>
         <div className="reminder-list">{reminderNotes.length?reminderNotes.map(([date,note])=><button key={date} className={date<todayKey?"is-past":""} onClick={()=>setView("mine")}><time>{date.slice(5).replace("-","/")}</time><span className="reminder-tag">{calendarTagLabel(note.tag)}</span><b>{note.text}</b><small className="reminder-state">{date<todayKey?t.expired:t.toDo}</small></button>):<EmptyState title={t.noReminders} description={t.noRemindersHelp} actionLabel={en?"Open calendar":"打开日历"} onAction={()=>setView("mine")}/>}</div>
       </section>}
@@ -580,8 +593,8 @@ export default function Home() {
           <div className="ranking-cell">
             <RankingBadge ranking={getRankingByType(p, rankingType)} language={language} compact rankingType={rankingType}/>
           </div>
-          <span>{dateLabel(p.deadline)}</span>
-          <span className={`countdown ${deadlineInfo(p.deadline).tone}`}>{deadlineInfo(p.deadline).label}</span>
+          <span>{dateLabel(p.deadline,language)}</span>
+          <span className={`countdown ${deadlineInfo(p.deadline,language).tone}`}>{deadlineInfo(p.deadline,language).label}</span>
           <span className={overallVerification(p)==="verified"?"verified":"pending"}>{overallVerification(p)==="verified"?t.verified:overallVerification(p)==="historical"?(en?"Historical":"历史参考"):t.pending}</span>
           <div className="actions">
             <CompareButton selected={compare.includes(p.id)} language={language} onToggle={()=>toggleCompare(p.id)} compact/>
@@ -813,7 +826,7 @@ export default function Home() {
 
     {toast&&<div className="interaction-toast" role="status">{toast}</div>}
 
-    {compareOpen&&<div className="compare-overlay" onClick={()=>setCompareOpen(false)}><section className="compare-modal" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCompareOpen(false)}>×</button><p className="kicker">SCHOOL COMPARISON</p><h2>学校对比</h2><div className="compare-table"><div className="compare-labels"><b>项目</b><span>综合排名</span><span>申请费</span><span>学费</span><span>生活费</span><span>截止日期</span><span>位置</span><span>研究优势</span><span>官网</span></div>{compare.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;return <div className="compare-column" key={id}><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>#{p.rank}</span><span>{APP_FEE_BY_REGION[programRegion(p)]}</span><span>{costFor(p.school).tuition}</span><span>{costFor(p.school).shared}</span><span>{dateLabel(p.deadline)}</span><span>{programLocation(p)}</span><span>{p.tracks.map(t=>t.name).join(" · ")}</span><a href={p.source} target="_blank" rel="noreferrer">官网 ↗</a></div>})}</div></section></div>}
+    {compareOpen&&<div className="compare-overlay" onClick={()=>setCompareOpen(false)}><section className="compare-modal" onClick={e=>e.stopPropagation()}><button className="course-close" onClick={()=>setCompareOpen(false)}>×</button><p className="kicker">SCHOOL COMPARISON</p><h2>学校对比</h2><div className="compare-table"><div className="compare-labels"><b>项目</b><span>综合排名</span><span>申请费</span><span>学费</span><span>生活费</span><span>截止日期</span><span>位置</span><span>研究优势</span><span>官网</span></div>{compare.map(id=>{const p=PROGRAM_BY_ID.get(id);if(!p)return null;return <div className="compare-column" key={id}><b>{SCHOOL_NAMES[p.school]||p.school}</b><span>#{p.rank}</span><span>{APP_FEE_BY_REGION[programRegion(p)]}</span><span>{costFor(p.school).tuition}</span><span>{costFor(p.school).shared}</span><span>{dateLabel(p.deadline,language)}</span><span>{programLocation(p)}</span><span>{p.tracks.map(t=>t.name).join(" · ")}</span><a href={p.source} target="_blank" rel="noreferrer">官网 ↗</a></div>})}</div></section></div>}
     {!!compare.length && <CompareBar 
       compare={compare} 
       programs={PROGRAM_BY_ID} 
