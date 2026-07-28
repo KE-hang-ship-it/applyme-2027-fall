@@ -268,6 +268,13 @@ function languageRequirementMet(profile: UserProfile, program: ProgramV2) {
   return toeflMet || ieltsMet;
 }
 
+function hasLanguageScore(profile: UserProfile) {
+  return (
+    (toeflScale(profile) !== "not-taken" && hasScore(profile.toefl)) ||
+    hasScore(profile.ielts)
+  );
+}
+
 function greRisk(profile: UserProfile, gre?: GRERequirement) {
   if (!gre || gre.status !== "required") return false;
   return !hasGre(profile);
@@ -325,9 +332,19 @@ export function classifySelection(
     risk -= 1;
     rationale.push(language === "zh" ? "GPA 为申请提供正向支持。" : "GPA provides positive academic support.");
   }
-  if (!languageRequirementMet(profile, program)) {
+  if (!hasLanguageScore(profile)) {
+    rationale.push(
+      language === "zh"
+        ? "尚未提供语言成绩，暂时无法判断是否满足项目要求。"
+        : "No language score is available, so the requirement cannot yet be assessed.",
+    );
+  } else if (!languageRequirementMet(profile, program)) {
     risk += 3;
-    rationale.push(language === "zh" ? "当前语言成绩未满足已知最低要求。" : "Current language score does not meet a known minimum.");
+    rationale.push(
+      language === "zh"
+        ? "当前提供的语言成绩低于已知最低要求。"
+        : "The submitted language score is below a known minimum.",
+    );
   }
   if (greRisk(profile, program.applicationRequirements?.gre)) {
     risk += 2;

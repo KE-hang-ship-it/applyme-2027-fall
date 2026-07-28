@@ -238,6 +238,22 @@ function sourceCellLabel(url: string, language: SnapshotLanguage) {
   }
 }
 
+function sourceFieldLabel(field: string, language: SnapshotLanguage) {
+  const labels: Record<string, { zh: string; en: string }> = {
+    programWebsite: { zh: "项目官网", en: "Program website" },
+    departmentWebsite: { zh: "院系官网", en: "Department website" },
+    applicationWebsite: { zh: "申请入口", en: "Application portal" },
+    deadline: { zh: "截止日期来源", en: "Deadline source" },
+    gre: { zh: "GRE 要求来源", en: "GRE source" },
+    toefl: { zh: "TOEFL 要求来源", en: "TOEFL source" },
+    ielts: { zh: "IELTS 要求来源", en: "IELTS source" },
+    letters: { zh: "推荐信要求来源", en: "Recommendation source" },
+    tuition: { zh: "学费来源", en: "Tuition source" },
+    curriculum: { zh: "课程来源", en: "Curriculum source" },
+  };
+  return labels[field]?.[language] ?? (language === "zh" ? "官方来源" : "Official source");
+}
+
 type ExcelCell = {
   value: string | number;
   type: "string" | "number" | "date" | "hyperlink";
@@ -571,10 +587,18 @@ export function exportSchoolListExcel({
   );
 }
 
-function list(items: readonly string[], empty: string, limit = 3) {
+function list(
+  items: readonly string[],
+  empty: string,
+  limit = 3,
+  moreLabel?: (count: number) => string,
+) {
   if (!items.length) return `<p class="muted">${escapeHtml(empty)}</p>`;
   const visible = items.slice(0, limit);
-  const more = items.length > limit ? `<li class="muted">+${items.length - limit}</li>` : "";
+  const remaining = items.length - limit;
+  const more = remaining > 0 && moreLabel
+    ? `<li class="muted">${escapeHtml(moreLabel(remaining))}</li>`
+    : "";
   return `<ul>${visible.map(item => `<li>${escapeHtml(item)}</li>`).join("")}${more}</ul>`;
 }
 
@@ -634,7 +658,13 @@ function localizedInsights(items: readonly string[], language: SnapshotLanguage)
 
 function deadlineHtml(program: PDFReportSnapshotProgram, language: SnapshotLanguage) {
   if (!program.deadlineSummary.length) return compactText(missing(language, "date"), language);
-  return program.deadlineSummary.map(item => {
+  const hasCurrentDeadline = program.deadlineSummary.some(item => item.isCurrentCycle);
+  const currentCycleNotice = !hasCurrentDeadline
+    ? `<div class="current-cycle-notice"><span>${escapeHtml(
+        language === "zh" ? "目标申请季截止日期尚未公布" : "The target-cycle deadline has not been published",
+      )}</span></div>`
+    : "";
+  const deadlines = program.deadlineSummary.map(item => {
     const value = item.date || missing(language, "date");
     const status = item.verificationStatus
       ? verificationLabels[language][item.verificationStatus]
@@ -642,6 +672,7 @@ function deadlineHtml(program: PDFReportSnapshotProgram, language: SnapshotLangu
     const label = [item.label, item.deadlineType, item.intake].filter(Boolean).join(" · ");
     return `<div>${label ? `<small>${escapeHtml(label)}</small>` : ""}<span>${escapeHtml(value)}</span><em>${escapeHtml(status)}</em></div>`;
   }).join("");
+  return `${currentCycleNotice}${deadlines}`;
 }
 
 function warningSummary(snapshot: PDFReportSnapshot) {
@@ -787,7 +818,11 @@ function projectCard(program: PDFReportSnapshotProgram, language: SnapshotLangua
     { title: zh ? "尚未满足的要求" : "Unmet requirements", items: program.unmetRequirements },
     { title: zh ? "下一步行动" : "Next actions", items: program.nextActions },
   ].filter(section => section.items.length > 0);
-  const sources = program.officialSources.filter(item => item.official).slice(0, 5);
+  const sources = [...new Map(
+    program.officialSources
+      .filter(item => item.official)
+      .map(item => [`${item.field}|${item.domain}`, item] as const),
+  ).values()].slice(0, 5);
   const location = [program.university.city, program.university.state, program.university.country]
     .filter(Boolean)
     .join(", ");
@@ -801,7 +836,12 @@ function projectCard(program: PDFReportSnapshotProgram, language: SnapshotLangua
       </div>
       <span class="status">${escapeHtml(programStatusLabel)}</span>
     </div>
-    ${suggestedCategory ? `<div class="suggested-category"><b>${zh ? "系统参考" : "Suggested category"}: ${escapeHtml(suggestedCategory)}</b>${list(program.categoryDecision.rationale, "", 2)}</div>` : ""}
+    ${suggestedCategory ? `<div class="suggested-category"><b>${zh ? "系统参考" : "Suggested category"}: ${escapeHtml(suggestedCategory)}</b>${list(
+      program.categoryDecision.rationale,
+      "",
+      3,
+      count => zh ? `另有 ${count} 项判断依据` : `${count} more reference factor${count === 1 ? "" : "s"}`,
+    )}</div>` : ""}
     <div class="fact-grid">
       <div class="deadline-fact"><b>${zh ? "截止日期" : "Deadline"}</b>${deadlineHtml(program, language)}</div>
       <div><b>GRE</b><span>${escapeHtml(greLabel(requirements.gre, language))}</span></div>
@@ -813,7 +853,7 @@ function projectCard(program: PDFReportSnapshotProgram, language: SnapshotLangua
     <div class="attribute-note"><b>${zh ? "学位与培养属性" : "Degree and format"}</b><span>${escapeHtml(degreeAttribute)}</span><span>${escapeHtml(program.programAttributes.explanation)}</span></div>
     ${analysisSections.length ? `<div class="analysis-grid">${analysisSections.map(section => `<section><h3>${escapeHtml(section.title)}</h3>${list(section.items, "", 5)}</section>`).join("")}</div>` : ""}
     ${program.userNotes ? `<div class="note"><b>${zh ? "个人备注" : "Personal note"}</b><span>${escapeHtml(program.userNotes)}</span></div>` : ""}
-    ${sources.length ? `<div class="sources"><b>${zh ? "官方来源与核验" : "Official sources and verification"}</b>${sources.map(source => `<a href="${escapeHtml(source.url)}">${escapeHtml(source.domain)} · ${escapeHtml(statusLabel(source.status, language))}${source.lastVerifiedAt ? ` · ${escapeHtml(source.lastVerifiedAt)}` : ""}</a>`).join("")}</div>` : ""}
+    ${sources.length ? `<div class="sources"><b>${zh ? "官方来源与核验" : "Official sources and verification"}</b>${sources.map(source => `<a href="${escapeHtml(source.url)}">${escapeHtml(sourceFieldLabel(source.field, language))} · ${escapeHtml(source.domain)} · ${escapeHtml(statusLabel(source.status, language))}${source.lastVerifiedAt ? ` · ${escapeHtml(source.lastVerifiedAt)}` : ""}</a>`).join("")}</div>` : ""}
     <div class="card-footer">
       <span>${zh ? "数据可信度" : "Data confidence"}: ${escapeHtml(zh ? {high:"高",medium:"中",low:"低"}[program.verificationSummary.confidence] : {high:"High",medium:"Medium",low:"Low"}[program.verificationSummary.confidence])}</span>
       ${website ? `<a href="${escapeHtml(website)}">${escapeHtml(sourceCellLabel(website, language))}</a>` : ""}
@@ -827,7 +867,7 @@ function applicantProfileHtml(snapshot: PDFReportSnapshot) {
   const educationCount = snapshot.applicant.educationExperiences.length;
   if (!snapshot.applicant.profileAvailable && !educationCount) return "";
   return `<section class="applicant-profile">
-    <header><h2>${zh ? "申请者画像" : "Applicant profile"}</h2><span>${snapshot.applicant.completion.completionRate}%</span></header>
+    <header><h2>${zh ? "申请者画像" : "Applicant profile"}</h2><span>${zh ? "核心画像完成度" : "Core profile completion"} · ${snapshot.applicant.completion.completionRate}%</span></header>
     <div class="applicant-facts">${rows.map(([label, value]) => `<div><small>${escapeHtml(label)}</small><b>${escapeHtml(value)}</b></div>`).join("")}</div>
   </section>`;
 }
@@ -841,6 +881,23 @@ export function buildSchoolListReportHtml(
   const summary = snapshot.selectionSummary;
   const warnings = warningSummary(snapshot);
   const personalized = snapshot.reportMeta.reportMode === "personalized";
+  const hasUserCategory =
+    summary.reachCount + summary.matchCount + summary.safetyCount > 0;
+  const suggestedSummary = snapshot.programs.reduce(
+    (counts, program) => {
+      if (
+        program.category === "unclassified" &&
+        program.categoryDecision.origin === "rule" &&
+        program.categoryDecision.value !== "unclassified"
+      ) {
+        counts[program.categoryDecision.value] += 1;
+      }
+      return counts;
+    },
+    { reach: 0, match: 0, safety: 0 },
+  );
+  const hasSuggestedSummary =
+    suggestedSummary.reach + suggestedSummary.match + suggestedSummary.safety > 0;
   const categoryOrder = ["reach", "match", "safety", "unclassified"] as const;
   const categoryGroups = categoryOrder.flatMap(category => {
     const programs = snapshot.programs.filter(program => program.category === category);
@@ -853,7 +910,9 @@ export function buildSchoolListReportHtml(
   });
   const generatedDate = new Date(snapshot.reportMeta.generatedAt).toLocaleDateString(zh ? "zh-CN" : "en-US");
   const reportType = personalized
-    ? (zh ? "个性化选校报告" : "Personalized School Selection Report")
+    ? hasUserCategory
+      ? (zh ? "个性化选校报告" : "Personalized School Selection Report")
+      : (zh ? "申请者画像与候选项目分析" : "Applicant Profile and Candidate Program Analysis")
     : (zh ? "候选项目清单" : "Candidate Program List");
   const darkBrandUrl = brandUrl.replace("applyme-horizontal.png", "applyme-horizontal-dark.png");
   return `<!doctype html>
@@ -886,6 +945,8 @@ export function buildSchoolListReportHtml(
     .summary div{padding:9px;border:1px solid #dbe4ee;border-radius:10px;background:#f7f9fc}
     .summary .reach{background:#fff2f2;border-color:#efd4d4}.summary .match{background:#fff8e6;border-color:#eadcaf}.summary .safety{background:#eef8f1;border-color:#cfe4d5}.summary .unclassified{background:#f1f4f7;border-color:#d8e0e8}
     .summary span,.summary b{display:block}.summary b{font-size:19px}
+    .suggested-summary{display:flex;align-items:center;gap:12px;margin:-5px 0 13px;padding:8px 10px;border:1px solid #dbe4ee;border-radius:10px;background:#f8fafc}
+    .suggested-summary>span{color:#52677c;font-weight:700}.suggested-summary div{display:flex;gap:6px}.suggested-summary b{padding:3px 8px;border-radius:999px;background:#edf2f7;font-size:10px}.suggested-summary .reach{color:#8c4148;background:#fbe9ea}.suggested-summary .match{color:#7f5d15;background:#fff3d5}.suggested-summary .safety{color:#326746;background:#e7f3eb}
     .applicant-profile{margin:0 0 12px;padding:10px 12px;border:1px solid #dbe4ee;border-radius:12px;background:#f8fafc}
     .applicant-profile header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}.applicant-profile h2{font-size:14px}.applicant-profile header span{color:#27659a;font-weight:800}
     .applicant-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 12px;max-height:118mm;overflow:hidden}
@@ -946,6 +1007,7 @@ export function buildSchoolListReportHtml(
       <div class="safety"><span>${zh ? "保底" : "Safety"}</span><b>${summary.safetyCount}</b></div>
       <div class="unclassified"><span>${zh ? "未分类" : "Unclassified"}</span><b>${summary.unclassifiedCount}</b></div>
     </section>
+    ${hasSuggestedSummary ? `<section class="suggested-summary"><span>${zh ? "系统参考分布（不覆盖我的分类）" : "Suggested distribution (does not override My category)"}</span><div><b class="reach">${zh ? "冲刺" : "Reach"} ${suggestedSummary.reach}</b><b class="match">${zh ? "匹配" : "Match"} ${suggestedSummary.match}</b><b class="safety">${zh ? "保底" : "Safety"} ${suggestedSummary.safety}</b></div></section>` : ""}
     ${applicantProfileHtml(snapshot)}
     ${!personalized ? `<section class="warnings"><h2>${zh ? "如何生成个性化系统参考" : "How to enable personalized suggestions"}</h2><p>${zh ? `请补充：${snapshot.reportMeta.profileMissingFields.join("、")}` : `Complete: ${snapshot.reportMeta.profileMissingFields.join(", ")}`}</p><p>${zh ? "当前报告保留“我的分类”；画像完整后，系统参考仍不会覆盖用户分类。" : "This report preserves My category. Suggested categories never override the user's category."}</p></section>` : ""}
     ${warnings.length ? `<section class="warnings"><h2>${zh ? "数据提醒" : "Data warnings"}</h2><ul>${warnings.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}

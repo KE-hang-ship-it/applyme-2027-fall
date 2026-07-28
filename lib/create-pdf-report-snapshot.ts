@@ -683,6 +683,7 @@ export function createPDFReportSnapshot(
     .map((program) => program.verificationSummary.lastReviewedAt)
     .filter((date): date is string => Boolean(date))
     .sort();
+  const hasUserCategory = outputPrograms.some((program) => program.category !== "unclassified");
   const snapshot: PDFReportSnapshot = {
     reportMeta: {
       reportId,
@@ -691,10 +692,14 @@ export function createPDFReportSnapshot(
       title:
         language === "zh"
           ? reportMode === "personalized"
-            ? "ApplyME 个性化选校参考报告"
+            ? hasUserCategory
+              ? "ApplyME 个性化选校参考报告"
+              : "ApplyME 申请者画像与候选项目分析"
             : "ApplyME 候选项目清单"
           : reportMode === "personalized"
-            ? "ApplyME Personalized School Selection Reference"
+            ? hasUserCategory
+              ? "ApplyME Personalized School Selection Reference"
+              : "ApplyME Applicant Profile and Candidate Program Analysis"
             : "ApplyME Candidate Program List",
       generatedAt,
       language,

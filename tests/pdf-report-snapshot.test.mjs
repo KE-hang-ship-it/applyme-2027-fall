@@ -200,6 +200,10 @@ test("complete profile produces explainable reference categories for unclassifie
   });
   const program = result.snapshot.programs[0];
   assert.equal(result.snapshot.reportMeta.reportMode, "personalized");
+  assert.equal(
+    result.snapshot.reportMeta.title,
+    "ApplyME Applicant Profile and Candidate Program Analysis",
+  );
   assert.equal(program.category, "unclassified");
   assert.equal(program.categoryDecision.origin, "rule");
   assert.equal(program.categoryDecision.referenceOnly, true);
@@ -421,4 +425,28 @@ test("TOEFL not-taken is explicit and legacy single-school profiles remain compa
   assert.equal(notTaken.snapshot.applicant.educationExperiences[0].gpa.value, 3.85);
   assert.equal(notTaken.snapshot.applicant.toefl.score, null);
   assert.equal(notTaken.snapshot.applicant.toefl.scale, "not-taken");
+});
+
+test("a missing language score is not misreported as failing the requirement", () => {
+  const result = createPDFReportSnapshot({
+    ...fixed,
+    language: "zh",
+    userProfile: {
+      undergraduateSchool: "Example University",
+      undergraduateMajor: "Mechanical Engineering",
+      gpa: { value: 3.8, scale: 4 },
+      toefl: { score: null, scale: "not-taken" },
+      targetDegree: ["MS"],
+      targetMajor: ["Mechanical Engineering"],
+      targetAreas: ["Robotics"],
+      targetRegions: ["United States"],
+      budget: { amount: 100000, currency: "USD", period: "program" },
+      preferredProgramType: ["research"],
+    },
+    programs: [legacy("language-pending")],
+    selections: [selection("language-pending", "unclassified")],
+  });
+  const rationale = result.snapshot.programs[0].categoryDecision.rationale.join(" ");
+  assert.match(rationale, /尚未提供语言成绩/);
+  assert.doesNotMatch(rationale, /低于项目最低要求/);
 });
