@@ -594,7 +594,33 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{cursor:not-al
 .report-profile-grid textarea{min-height:74px;resize:vertical}
 .report-profile-grid .wide{grid-column:span 3}
 .report-profile-note{margin:12px 0 0;color:var(--muted,#718096);font-size:12px}
+.profile-section{margin-top:16px;padding:16px;border:1px solid var(--border,#dbe3ec);border-radius:14px;background:color-mix(in srgb,var(--surface,#fff) 94%,#edf4fb)}
+.profile-section-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.profile-section-header h3{margin:0;color:var(--text,#172d4a);font-size:16px}
+.profile-section-header p{margin:4px 0 0;color:var(--muted,#718096);font-size:12px}
+.profile-field-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.profile-field-grid label,.target-area-field{display:grid;gap:6px;color:var(--muted,#5f6b7a);font-size:13px}
+.profile-field-grid input,.profile-field-grid select,.profile-field-grid textarea{width:100%;box-sizing:border-box;border:1px solid var(--border,#dbe3ec);border-radius:10px;background:var(--surface,#fff);color:var(--text,#172d4a);padding:9px 10px;font:inherit}
+.profile-field-grid textarea{min-height:84px;resize:vertical}
+.profile-field-grid .wide{grid-column:span 3}
+.education-list{display:grid;gap:12px}
+.education-card{padding:14px;border:1px solid var(--border,#dbe3ec);border-radius:12px;background:var(--surface,#fff)}
+.education-card-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.education-card-title h4{margin:0;color:var(--text,#172d4a);font-size:14px}
+.profile-checks{display:flex;flex-wrap:wrap;gap:10px 18px;grid-column:span 3}
+.profile-checks label{display:flex;align-items:center;gap:7px}
+.profile-checks input{width:auto}
+.profile-add-button,.profile-remove-button{border:1px solid var(--border,#dbe3ec);border-radius:9px;background:var(--surface,#fff);color:var(--text,#172d4a);padding:7px 11px;font:inherit;cursor:pointer}
+.profile-remove-button{color:#a33b3b}
+.profile-add-button:hover,.profile-remove-button:hover{border-color:#89a8c5;background:#f3f7fb}
+.compact-field{grid-template-columns:minmax(0,1fr) minmax(90px,.45fr)}
+.field-error{margin:2px 0 0;color:#b42318;font-size:12px}
+.target-area-field{grid-column:span 3}
+.target-area-options{display:flex;flex-wrap:wrap;gap:8px}
+.target-area-options label{display:flex;align-items:center;gap:6px;border:1px solid var(--border,#dbe3ec);border-radius:999px;background:var(--surface,#fff);padding:7px 10px}
+.target-area-options input{width:auto}
 @media(max-width:760px){.report-profile-panel summary{align-items:flex-start;flex-direction:column}.report-profile-grid{grid-template-columns:1fr}.report-profile-grid .wide{grid-column:auto}}
+@media(max-width:760px){.profile-section{padding:13px}.profile-section-header{flex-direction:column}.profile-field-grid{grid-template-columns:1fr}.profile-field-grid .wide,.profile-checks,.target-area-field{grid-column:auto}.compact-field{grid-template-columns:1fr}.education-card-title{align-items:flex-start}}
 
 /* Dashboard workspace final cascade guards */
 .command-overview:after{content:"ME";width:auto;height:auto;right:18px;top:-20px;border:0;border-radius:0;background:none;color:color-mix(in srgb,var(--accent) 7%,transparent);font-size:94px;font-weight:900;line-height:1;transform:none}

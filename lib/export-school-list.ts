@@ -396,6 +396,81 @@ ${links.map((url, index) => `<Relationship Id="rId${index + 1}" Type="http://sch
 </Relationships>`;
 }
 
+function applicantRows(snapshot: PDFReportSnapshot): Array<[string, string]> {
+  const zh = snapshot.reportMeta.language === "zh";
+  const applicant = snapshot.applicant;
+  const empty = zh ? "暂无" : "Not provided";
+  const studyTypes: Record<string, [string, string]> = {
+    standard: ["普通本科", "Standard undergraduate"],
+    "2+2-first": ["2+2 前半段", "2+2 first stage"],
+    "2+2-second": ["2+2 后半段", "2+2 second stage"],
+    "pre-transfer": ["转学前", "Before transfer"],
+    "post-transfer": ["转学后", "After transfer"],
+    joint: ["联合培养", "Joint program"],
+    "dual-degree": ["双学位", "Dual degree"],
+    exchange: ["交换经历", "Exchange"],
+    other: ["其他", "Other"],
+  };
+  const degreeModes: Record<string, [string, string]> = {
+    single: ["单学位", "Single degree"],
+    dual: ["双学位", "Dual degree"],
+    joint: ["联合学位", "Joint degree"],
+    undecided: ["尚未确定", "Undecided"],
+  };
+  const rows: Array<[string, string]> = [
+    [zh ? "画像完整度" : "Profile completion", `${applicant.completion.completionRate}%`],
+    [zh ? "学位模式" : "Degree mode", applicant.degreeMode ? degreeModes[applicant.degreeMode]?.[zh ? 0 : 1] ?? applicant.degreeMode : empty],
+  ];
+  applicant.educationExperiences.forEach((education, index) => {
+    const prefix = zh ? `教育经历 ${index + 1}` : `Education ${index + 1}`;
+    const gpa = education.gpa?.value != null && education.gpa?.scale != null
+      ? `${education.gpa.value} / ${education.gpa.scale}`
+      : empty;
+    rows.push(
+      [prefix, education.school || empty],
+      [zh ? "国家或地区" : "Country or region", education.countryOrRegion || empty],
+      [zh ? "本科专业" : "Undergraduate major", education.major || empty],
+      [zh ? "就读类型" : "Study type", education.studyType ? studyTypes[education.studyType]?.[zh ? 0 : 1] ?? education.studyType : empty],
+      ["GPA", gpa],
+      [zh ? "学位授予" : "Degree awarded", education.awardsDegree ? (zh ? "是" : "Yes") : (zh ? "否" : "No")],
+      [zh ? "最终毕业院校" : "Final graduation school", education.finalGraduationSchool ? (zh ? "是" : "Yes") : (zh ? "否" : "No")],
+    );
+  });
+  const toefl = applicant.toefl?.scale === "not-taken"
+    ? (zh ? "尚未考试" : "Not taken")
+    : applicant.toefl?.score != null
+      ? `${applicant.toefl.score} / ${applicant.toefl.scale === "1-6" ? "6" : "120"}`
+      : empty;
+  rows.push(
+    ["TOEFL iBT", toefl],
+    ["IELTS", applicant.ielts?.score != null ? String(applicant.ielts.score) : empty],
+    [zh ? "GRE 总分" : "GRE total", applicant.gre?.total != null ? String(applicant.gre.total) : empty],
+    ["GRE Quantitative", applicant.gre?.quantitative != null ? String(applicant.gre.quantitative) : empty],
+    [zh ? "目标专业" : "Target major", applicant.targetMajor.join("、") || empty],
+    [zh ? "目标学位" : "Target degree", applicant.targetDegree.join(" / ") || empty],
+    [zh ? "目标方向" : "Target areas", applicant.targetAreas.join("、") || empty],
+    [zh ? "地区偏好" : "Region preferences", applicant.targetRegions.join("、") || empty],
+    [zh ? "预算" : "Budget", applicant.budget?.amount != null ? `${applicant.budget.amount} ${applicant.budget.currency}` : empty],
+    [zh ? "申请目标" : "Career goal", applicant.careerGoal || empty],
+  );
+  return rows;
+}
+
+function applicantWorksheetXml(snapshot: PDFReportSnapshot) {
+  const rows = applicantRows(snapshot);
+  const headerA = snapshot.reportMeta.language === "zh" ? "申请者画像" : "Applicant profile";
+  const headerB = snapshot.reportMeta.language === "zh" ? "内容" : "Value";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+  <cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="2" width="54" customWidth="1"/></cols>
+  <sheetData>
+    <row r="1" ht="30" customHeight="1"><c r="A1" t="inlineStr" s="1"><is><t>${escapeXml(headerA)}</t></is></c><c r="B1" t="inlineStr" s="1"><is><t>${escapeXml(headerB)}</t></is></c></row>
+    ${rows.map(([label, value], index) => `<row r="${index + 2}" ht="28" customHeight="1"><c r="A${index + 2}" t="inlineStr" s="7"><is><t>${escapeXml(label)}</t></is></c><c r="B${index + 2}" t="inlineStr" s="7"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c></row>`).join("")}
+  </sheetData>
+</worksheet>`;
+}
+
 export function buildSchoolListWorkbookBytes(snapshot: PDFReportSnapshot, programs: readonly Program[]) {
   const { headers, rows } = buildExcelRows(snapshot, programs);
   const files: Record<string, Uint8Array> = {
@@ -405,6 +480,7 @@ export function buildSchoolListWorkbookBytes(snapshot: PDFReportSnapshot, progra
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
 </Types>`),
     "_rels/.rels": strToU8(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -413,12 +489,13 @@ export function buildSchoolListWorkbookBytes(snapshot: PDFReportSnapshot, progra
 </Relationships>`),
     "xl/workbook.xml": strToU8(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets><sheet name="${snapshot.reportMeta.language === "zh" ? "选校名单" : "School List"}" sheetId="1" r:id="rId1"/></sheets>
+  <sheets><sheet name="${snapshot.reportMeta.language === "zh" ? "选校名单" : "School List"}" sheetId="1" r:id="rId1"/><sheet name="${snapshot.reportMeta.language === "zh" ? "申请者画像" : "Applicant Profile"}" sheetId="2" r:id="rId2"/></sheets>
 </workbook>`),
     "xl/_rels/workbook.xml.rels": strToU8(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>`),
     "xl/styles.xml": strToU8(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -464,6 +541,7 @@ export function buildSchoolListWorkbookBytes(snapshot: PDFReportSnapshot, progra
   <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`),
     "xl/worksheets/sheet1.xml": strToU8(worksheetXml(headers, rows)),
+    "xl/worksheets/sheet2.xml": strToU8(applicantWorksheetXml(snapshot)),
     "xl/worksheets/_rels/sheet1.xml.rels": strToU8(worksheetRelationships(rows)),
   };
   return zipSync(files, { level: 6 });
@@ -743,6 +821,17 @@ function projectCard(program: PDFReportSnapshotProgram, language: SnapshotLangua
   </article>`;
 }
 
+function applicantProfileHtml(snapshot: PDFReportSnapshot) {
+  const zh = snapshot.reportMeta.language === "zh";
+  const rows = applicantRows(snapshot);
+  const educationCount = snapshot.applicant.educationExperiences.length;
+  if (!snapshot.applicant.profileAvailable && !educationCount) return "";
+  return `<section class="applicant-profile">
+    <header><h2>${zh ? "申请者画像" : "Applicant profile"}</h2><span>${snapshot.applicant.completion.completionRate}%</span></header>
+    <div class="applicant-facts">${rows.map(([label, value]) => `<div><small>${escapeHtml(label)}</small><b>${escapeHtml(value)}</b></div>`).join("")}</div>
+  </section>`;
+}
+
 export function buildSchoolListReportHtml(
   snapshot: PDFReportSnapshot,
   brandUrl = "/brand/applyme-horizontal.png",
@@ -797,6 +886,10 @@ export function buildSchoolListReportHtml(
     .summary div{padding:9px;border:1px solid #dbe4ee;border-radius:10px;background:#f7f9fc}
     .summary .reach{background:#fff2f2;border-color:#efd4d4}.summary .match{background:#fff8e6;border-color:#eadcaf}.summary .safety{background:#eef8f1;border-color:#cfe4d5}.summary .unclassified{background:#f1f4f7;border-color:#d8e0e8}
     .summary span,.summary b{display:block}.summary b{font-size:19px}
+    .applicant-profile{margin:0 0 12px;padding:10px 12px;border:1px solid #dbe4ee;border-radius:12px;background:#f8fafc}
+    .applicant-profile header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}.applicant-profile h2{font-size:14px}.applicant-profile header span{color:#27659a;font-weight:800}
+    .applicant-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 12px;max-height:118mm;overflow:hidden}
+    .applicant-facts div{min-width:0;padding:5px 7px;border-radius:7px;background:#fff}.applicant-facts small,.applicant-facts b{display:block;overflow-wrap:anywhere}.applicant-facts small{color:#64748b}.applicant-facts b{font-size:10px}
     .warnings{padding:12px 14px;border:1px solid #f0d8a7;border-radius:12px;background:#fff9eb}
     .warnings h2{font-size:14px}.warnings ul{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin:8px 0 0;padding-left:18px}
     .cover-note{margin-top:14px;color:#64748b}
@@ -853,6 +946,7 @@ export function buildSchoolListReportHtml(
       <div class="safety"><span>${zh ? "保底" : "Safety"}</span><b>${summary.safetyCount}</b></div>
       <div class="unclassified"><span>${zh ? "未分类" : "Unclassified"}</span><b>${summary.unclassifiedCount}</b></div>
     </section>
+    ${applicantProfileHtml(snapshot)}
     ${!personalized ? `<section class="warnings"><h2>${zh ? "如何生成个性化系统参考" : "How to enable personalized suggestions"}</h2><p>${zh ? `请补充：${snapshot.reportMeta.profileMissingFields.join("、")}` : `Complete: ${snapshot.reportMeta.profileMissingFields.join(", ")}`}</p><p>${zh ? "当前报告保留“我的分类”；画像完整后，系统参考仍不会覆盖用户分类。" : "This report preserves My category. Suggested categories never override the user's category."}</p></section>` : ""}
     ${warnings.length ? `<section class="warnings"><h2>${zh ? "数据提醒" : "Data warnings"}</h2><ul>${warnings.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
     <p class="cover-note">${zh ? "申请要求可能随申请周期变化，请在提交前前往大学官网再次核实。" : "Requirements may change by application cycle. Verify all information on official university websites before applying."}</p>

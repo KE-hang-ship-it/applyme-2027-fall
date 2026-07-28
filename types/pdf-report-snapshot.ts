@@ -153,6 +153,8 @@ export type SnapshotApplicant = {
   targetMajor: string[];
   undergraduateSchool?: string;
   undergraduateMajor?: string;
+  educationExperiences: NonNullable<UserProfile["educationExperiences"]>;
+  degreeMode?: UserProfile["degreeMode"];
   gpa?: UserProfile["gpa"];
   toefl?: UserProfile["toefl"];
   ielts?: UserProfile["ielts"];
@@ -165,6 +167,7 @@ export type SnapshotApplicant = {
   targetRegions: NonNullable<UserProfile["targetRegions"]>;
   budget?: UserProfile["budget"];
   degreePreferences: NonNullable<UserProfile["preferredProgramType"]>;
+  careerGoal?: UserProfile["careerGoal"];
   completion: {
     complete: boolean;
     presentFields: string[];

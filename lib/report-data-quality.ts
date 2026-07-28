@@ -13,6 +13,12 @@ import type {
   SnapshotFieldMeta,
   SnapshotLanguage,
 } from "@/types/pdf-report-snapshot";
+import {
+  getEducationExperiences,
+  hasLanguageResult,
+  primaryEducation,
+  toeflScale,
+} from "@/lib/applicant-profile";
 
 const COUNTRY_ALIASES: Record<string, string> = {
   美国: "United States",
@@ -47,17 +53,13 @@ const KNOWN_LOCATIONS: Record<string, { city: string; state?: string; country: s
 };
 
 const PROFILE_FIELDS = [
+  "educationExperience",
   "gpa",
-  "undergraduateSchool",
   "undergraduateMajor",
   "languageScore",
-  "gre",
-  "researchExperience",
-  "internshipOrWorkExperience",
   "targetMajor",
   "targetDegree",
-  "budget",
-  "targetRegions",
+  "targetAreas",
 ] as const;
 
 function hasScore(score: { score?: number | null } | undefined) {
@@ -77,18 +79,22 @@ export function assessProfileCompleteness(profile?: UserProfile | null) {
       completionRate: 0,
     };
   }
+  const education = getEducationExperiences(profile);
+  const primary = primaryEducation(education);
+  const validEducation = education.filter(item => item.school.trim());
   const checks: Record<(typeof PROFILE_FIELDS)[number], boolean> = {
-    gpa: typeof profile.gpa?.value === "number",
-    undergraduateSchool: Boolean(profile.undergraduateSchool?.trim()),
-    undergraduateMajor: Boolean(profile.undergraduateMajor?.trim()),
-    languageScore: hasScore(profile.toefl) || hasScore(profile.ielts),
-    gre: hasGre(profile),
-    researchExperience: Boolean(profile.researchExperience?.length),
-    internshipOrWorkExperience: Boolean(profile.internshipExperience?.length || profile.workExperience?.length),
+    educationExperience: validEducation.length > 0,
+    gpa: validEducation.some(item =>
+      typeof item.gpa?.value === "number" &&
+      typeof item.gpa.scale === "number" &&
+      item.gpa.value >= 0 &&
+      item.gpa.value <= item.gpa.scale,
+    ),
+    undergraduateMajor: Boolean(primary?.major?.trim() || profile.undergraduateMajor?.trim()),
+    languageScore: hasLanguageResult(profile),
     targetMajor: Boolean(profile.targetMajor?.length),
     targetDegree: Boolean(profile.targetDegree?.length),
-    budget: typeof profile.budget?.amount === "number",
-    targetRegions: Boolean(profile.targetRegions?.length),
+    targetAreas: Boolean(profile.targetAreas?.length),
   };
   const presentFields = PROFILE_FIELDS.filter((field) => checks[field]);
   const missingFields = PROFILE_FIELDS.filter((field) => !checks[field]);
@@ -244,15 +250,20 @@ export function describeProgramAttributes(program: ProgramV2, language: Snapshot
 }
 
 function gpaOnFourPoint(profile: UserProfile) {
-  if (typeof profile.gpa?.convertedFourPointGPA === "number") return profile.gpa.convertedFourPointGPA;
-  if (typeof profile.gpa?.value !== "number" || typeof profile.gpa.scale !== "number" || profile.gpa.scale <= 0) return null;
-  return (profile.gpa.value / profile.gpa.scale) * 4;
+  const primary = primaryEducation(getEducationExperiences(profile));
+  const gpa = primary?.gpa ?? profile.gpa;
+  if (typeof gpa?.convertedFourPointGPA === "number") return gpa.convertedFourPointGPA;
+  if (typeof gpa?.value !== "number" || gpa.scale !== 4) return null;
+  return gpa.value;
 }
 
 function languageRequirementMet(profile: UserProfile, program: ProgramV2) {
+  if (toeflScale(profile) === "not-taken" && !hasScore(profile.ielts)) return false;
   const toefl = program.applicationRequirements?.toefl;
   const ielts = program.applicationRequirements?.ielts;
-  const toeflMet = toefl?.minimumScore == null || (profile.toefl?.score ?? -1) >= toefl.minimumScore;
+  const toeflMet = toeflScale(profile) === "1-6"
+    ? true
+    : toefl?.minimumScore == null || (profile.toefl?.score ?? -1) >= toefl.minimumScore;
   const ieltsMet = ielts?.minimumScore == null || (profile.ielts?.score ?? -1) >= ielts.minimumScore;
   return toeflMet || ieltsMet;
 }

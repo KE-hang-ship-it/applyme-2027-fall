@@ -348,6 +348,12 @@ export type UserScore = {
   note?: string;
 };
 
+export type TOEFLScoreScale = "0-120" | "1-6" | "not-taken";
+
+export type TOEFLScore = UserScore & {
+  scale?: TOEFLScoreScale;
+};
+
 export type GREScore = {
   verbal?: number | null;
   quantitative?: number | null;
@@ -355,6 +361,35 @@ export type GREScore = {
   total?: number | null;
   date?: string;
   note?: string;
+};
+
+export type EducationStudyType =
+  | "standard"
+  | "2+2-first"
+  | "2+2-second"
+  | "pre-transfer"
+  | "post-transfer"
+  | "joint"
+  | "dual-degree"
+  | "exchange"
+  | "other";
+
+export type DegreeMode = "single" | "dual" | "joint" | "undecided";
+
+export type EducationExperience = {
+  id: string;
+  school: string;
+  countryOrRegion?: string;
+  major?: string;
+  studyType?: EducationStudyType;
+  gpa?: {
+    value: number | null;
+    scale: number | null;
+    convertedFourPointGPA?: number | null;
+    note?: string;
+  };
+  awardsDegree?: boolean;
+  finalGraduationSchool?: boolean;
 };
 
 export type UserExperience = {
@@ -384,13 +419,15 @@ export type UserProfile = {
   targetMajor: string[];
   undergraduateSchool?: string;
   undergraduateMajor?: string;
+  educationExperiences?: EducationExperience[];
+  degreeMode?: DegreeMode;
   gpa?: {
     value: number | null;
     scale: number | null;
     convertedFourPointGPA?: number | null;
     note?: string;
   };
-  toefl?: UserScore;
+  toefl?: TOEFLScore;
   ielts?: UserScore;
   gre?: GREScore;
   researchExperience?: UserExperience[];

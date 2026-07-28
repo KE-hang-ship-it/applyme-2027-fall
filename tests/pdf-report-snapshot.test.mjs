@@ -354,3 +354,71 @@ test("historical deadline, tuition not-found, pending requirement, and REVIEW ar
   });
   assert.ok(pendingCase.warnings.some((item) => item.code === "PENDING_VERIFICATION"));
 });
+
+test("multi-school education, GPA scales, and TOEFL scale remain unchanged in the snapshot", () => {
+  const profile = {
+    applicationYear: "2027",
+    targetDegree: ["MS"],
+    targetMajor: ["Mechanical Engineering"],
+    educationExperiences: [
+      {
+        id: "cn-stage",
+        school: "Hubei Polytechnic University",
+        countryOrRegion: "China",
+        major: "Mechanical Engineering",
+        studyType: "2+2-first",
+        gpa: { value: 86.7, scale: 100 },
+        awardsDegree: false,
+        finalGraduationSchool: false,
+      },
+      {
+        id: "overseas-stage",
+        school: "Partner University",
+        countryOrRegion: "United States",
+        major: "Mechanical Engineering",
+        studyType: "2+2-second",
+        gpa: { value: 3.62, scale: 4 },
+        awardsDegree: true,
+        finalGraduationSchool: true,
+      },
+    ],
+    degreeMode: "single",
+    toefl: { score: 5, scale: "1-6" },
+    targetAreas: ["Robotics"],
+  };
+  const result = createPDFReportSnapshot({
+    ...fixed,
+    userProfile: profile,
+    programs: [legacy("berkeley-me")],
+    selections: [selection("berkeley-me", "match")],
+  });
+  assert.equal(result.snapshot.applicant.educationExperiences.length, 2);
+  assert.equal(result.snapshot.applicant.educationExperiences[0].gpa.value, 86.7);
+  assert.equal(result.snapshot.applicant.educationExperiences[0].gpa.scale, 100);
+  assert.equal(result.snapshot.applicant.educationExperiences[1].gpa.value, 3.62);
+  assert.equal(result.snapshot.applicant.educationExperiences[1].gpa.scale, 4);
+  assert.equal(result.snapshot.applicant.degreeMode, "single");
+  assert.equal(result.snapshot.applicant.toefl.score, 5);
+  assert.equal(result.snapshot.applicant.toefl.scale, "1-6");
+});
+
+test("TOEFL not-taken is explicit and legacy single-school profiles remain compatible", () => {
+  const notTaken = createPDFReportSnapshot({
+    ...fixed,
+    userProfile: {
+      undergraduateSchool: "Legacy University",
+      undergraduateMajor: "Mechanical Engineering",
+      gpa: { value: 3.85, scale: 4 },
+      toefl: { score: null, scale: "not-taken" },
+      targetDegree: ["MEng"],
+      targetMajor: ["Mechanical Engineering"],
+      targetAreas: ["Manufacturing"],
+    },
+    programs: [legacy("berkeley-me")],
+    selections: [selection("berkeley-me")],
+  });
+  assert.equal(notTaken.snapshot.applicant.educationExperiences[0].school, "Legacy University");
+  assert.equal(notTaken.snapshot.applicant.educationExperiences[0].gpa.value, 3.85);
+  assert.equal(notTaken.snapshot.applicant.toefl.score, null);
+  assert.equal(notTaken.snapshot.applicant.toefl.scale, "not-taken");
+});

@@ -34,6 +34,7 @@ import {
   normalizeLocation,
   sourceDomain,
 } from "./report-data-quality";
+import { getEducationExperiences, toeflScale } from "./applicant-profile";
 
 const SPLIT_LEGACY_IDS = new Set(["princeton-mae", "uva-mae", "rice-me"]);
 const CATEGORY_ORDER = { reach: 0, match: 1, safety: 2, unclassified: 3 } as const;
@@ -176,6 +177,8 @@ function applicant(profile?: UserProfile | null): SnapshotApplicant {
     targetMajor: [...(profile?.targetMajor ?? [])],
     undergraduateSchool: profile?.undergraduateSchool,
     undergraduateMajor: profile?.undergraduateMajor,
+    educationExperiences: structuredClone(getEducationExperiences(profile)),
+    degreeMode: profile?.degreeMode,
     gpa: profile?.gpa ? { ...profile.gpa } : undefined,
     toefl: profile?.toefl ? { ...profile.toefl } : undefined,
     ielts: profile?.ielts ? { ...profile.ielts } : undefined,
@@ -188,6 +191,7 @@ function applicant(profile?: UserProfile | null): SnapshotApplicant {
     targetRegions: [...(profile?.targetRegions ?? [])],
     budget: profile?.budget ? { ...profile.budget } : undefined,
     degreePreferences: [...(profile?.preferredProgramType ?? [])],
+    careerGoal: profile?.careerGoal,
     completion,
   };
 }
@@ -432,6 +436,7 @@ function buildProgram(
   if (
     requirements.toefl?.required &&
     requirements.toefl.minimumScore != null &&
+    toeflScale(profile) === "0-120" &&
     (profile?.toefl?.score ?? -1) < requirements.toefl.minimumScore
   ) {
     unmetRequirements.push(
