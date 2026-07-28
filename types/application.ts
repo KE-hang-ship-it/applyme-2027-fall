@@ -43,7 +43,12 @@ export type VerificationState =
   | "pending"
   | "not-published"
   | "historical"
-  | "not-found";
+  | "not-found"
+  | "not-required"
+  | "optional"
+  | "waived"
+  | "fetch-failed"
+  | "needs-manual-review";
 export type FieldVerification = {
   status: VerificationState;
   lastVerifiedAt?: string;
@@ -389,6 +394,7 @@ export type UserProfile = {
   ielts?: UserScore;
   gre?: GREScore;
   researchExperience?: UserExperience[];
+  internshipExperience?: UserExperience[];
   workExperience?: UserExperience[];
   projects?: UserProject[];
   targetAreas?: string[];

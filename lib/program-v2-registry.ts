@@ -19,6 +19,13 @@ export const PROGRAM_V2_MIGRATION_REGISTRY = {
   "gatech-me": ["gatech-me-msme"],
   "hku-me": ["hku-me-msceng"],
   "utoronto-me": ["utoronto-mie-meng"],
+  "vtech-me": ["vtech-me-ms-v2"],
+  "neu-me": ["neu-me-ms-v2"],
+  "osu-me": ["osu-me-ms-v2"],
+  "uiuc-me": ["uiuc-me-meng-v2"],
+  "wisc-me": ["wisc-me-ms-v2"],
+  "umd-me": ["umd-me-meng-v2"],
+  "duke-me": ["duke-me-ms-v2"],
 } as const;
 
 export type MigratedLegacyProgramId = keyof typeof PROGRAM_V2_MIGRATION_REGISTRY;
@@ -30,4 +37,3 @@ export function getProgramV2Ids(legacyId: string): readonly string[] {
 export function getDefaultProgramV2Id(legacyId: string): string | undefined {
   return getProgramV2Ids(legacyId)[0];
 }
-

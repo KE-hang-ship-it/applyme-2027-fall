@@ -2,6 +2,7 @@ import {
   TOP20_PROGRAM_V2_OVERRIDES,
   type ProgramV2Override,
 } from "../data/program-v2-top20";
+import { REPORT7_PROGRAM_V2_OVERRIDES } from "../data/program-v2-report7";
 import type {
   FieldVerificationV2,
   Program,
@@ -11,8 +12,13 @@ import type {
 import { toProgramV2 } from "./program-v2";
 import { getDefaultProgramV2Id, getProgramV2Ids } from "./program-v2-registry";
 
+const ALL_PROGRAM_V2_OVERRIDES = [
+  ...TOP20_PROGRAM_V2_OVERRIDES,
+  ...REPORT7_PROGRAM_V2_OVERRIDES,
+];
+
 const overrideById = new Map(
-  TOP20_PROGRAM_V2_OVERRIDES.map((override) => [override.id, override] as const),
+  ALL_PROGRAM_V2_OVERRIDES.map((override) => [override.id, override] as const),
 );
 
 const SPLIT_LEGACY_IDS = new Set(["princeton-mae", "uva-mae", "rice-me"]);
@@ -106,7 +112,13 @@ function mergeOverride(legacy: Program, override: ProgramV2Override): ProgramV2 
         ...toVerificationFields(override),
       },
       overallStatus:
-        override.programStatus === "REVIEW" ? "NEEDS_REVIEW" : "PARTIAL",
+        override.programStatus === "REVIEW"
+          ? "NEEDS_REVIEW"
+          : Object.values(override.verification).every((item) =>
+              ["verified", "not-required", "optional", "waived"].includes(item.status),
+            )
+            ? "VERIFIED"
+            : "PARTIAL",
       lastReviewedAt: override.data.dataMetadata?.lastReviewedAt,
       note: "Top 20 ProgramV2 migration override; legacy Program remains unchanged.",
     },

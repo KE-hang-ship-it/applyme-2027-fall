@@ -12,9 +12,14 @@ import {
   toProgramV2,
 } from "../lib/program-v2.ts";
 import { TOP20_PROGRAM_V2_OVERRIDES } from "../data/program-v2-top20.ts";
+import { REPORT7_PROGRAM_V2_OVERRIDES } from "../data/program-v2-report7.ts";
 import { PROGRAM_V2_MIGRATION_REGISTRY } from "../lib/program-v2-registry.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const PROGRAM_V2_OVERRIDES = [
+  ...TOP20_PROGRAM_V2_OVERRIDES,
+  ...REPORT7_PROGRAM_V2_OVERRIDES,
+];
 
 function propertyName(node) {
   if (
@@ -256,6 +261,11 @@ const validVerificationStates = new Set([
   "pending",
   "not-published",
   "not-found",
+  "not-required",
+  "optional",
+  "waived",
+  "fetch-failed",
+  "needs-manual-review",
 ]);
 
 function isVerificationRecord(value) {
@@ -346,17 +356,17 @@ function toCheckedProgramV2(legacyProgram, override) {
 
 const legacyById = new Map(programs.map((program) => [program.id, program]));
 const legacyAssessmentById = new Map(assessed.map((item) => [item.program.id, item]));
-const overrideIds = new Set(TOP20_PROGRAM_V2_OVERRIDES.map((override) => override.id));
-const coverage = TOP20_PROGRAM_V2_OVERRIDES.map((override) => ({
+const overrideIds = new Set(PROGRAM_V2_OVERRIDES.map((override) => override.id));
+const coverage = PROGRAM_V2_OVERRIDES.map((override) => ({
   id: override.id,
   ...verificationCoverage(override),
 }));
 
-const missingLegacyRecords = TOP20_PROGRAM_V2_OVERRIDES
+const missingLegacyRecords = PROGRAM_V2_OVERRIDES
   .filter((override) => !legacyById.has(override.legacyId))
   .map((override) => ({ id: override.id, legacyId: override.legacyId }));
 
-const historicalCurrentDeadlines = TOP20_PROGRAM_V2_OVERRIDES
+const historicalCurrentDeadlines = PROGRAM_V2_OVERRIDES
   .filter(
     (override) =>
       override.verification.deadline?.status === "historical" &&
@@ -364,7 +374,7 @@ const historicalCurrentDeadlines = TOP20_PROGRAM_V2_OVERRIDES
   )
   .map((override) => override.id);
 
-const invalidNotFoundTuition = TOP20_PROGRAM_V2_OVERRIDES
+const invalidNotFoundTuition = PROGRAM_V2_OVERRIDES
   .filter(
     (override) =>
       override.data.tuition?.verificationStatus === "not-found" &&
@@ -376,13 +386,13 @@ const invalidNotFoundTuition = TOP20_PROGRAM_V2_OVERRIDES
 const registryIds = Object.values(PROGRAM_V2_MIGRATION_REGISTRY).flat();
 const invalidRegistryReferences = registryIds.filter((id) => !overrideIds.has(id));
 const unregisteredOverrides = [...overrideIds].filter((id) => !registryIds.includes(id));
-const duplicateOverrideIds = duplicates(TOP20_PROGRAM_V2_OVERRIDES, (override) => override.id);
+const duplicateOverrideIds = duplicates(PROGRAM_V2_OVERRIDES, (override) => override.id);
 const duplicateCanonicalPrograms = duplicates(
-  TOP20_PROGRAM_V2_OVERRIDES,
+  PROGRAM_V2_OVERRIDES,
   (override) => `${override.school}|${override.program}|${override.degree}`.toLowerCase(),
 );
 
-const notreDame = TOP20_PROGRAM_V2_OVERRIDES.find(
+const notreDame = PROGRAM_V2_OVERRIDES.find(
   (override) => override.legacyId === "notredame-me",
 );
 const notreDameValid =
@@ -394,7 +404,7 @@ const notreDameValid =
     (field) => notreDame.verification[field]?.status === "pending",
   );
 
-const scoreChanges = TOP20_PROGRAM_V2_OVERRIDES.map((override) => {
+const scoreChanges = PROGRAM_V2_OVERRIDES.map((override) => {
   const legacy = legacyById.get(override.legacyId);
   const current = legacyAssessmentById.get(override.legacyId);
   if (!legacy || !current) {
@@ -464,9 +474,9 @@ const report = {
   priorityPrograms: rankedForPriority,
   migration: {
     legacyTop20Count: Object.keys(PROGRAM_V2_MIGRATION_REGISTRY).length,
-    canonicalProgramV2Count: TOP20_PROGRAM_V2_OVERRIDES.length,
+    canonicalProgramV2Count: PROGRAM_V2_OVERRIDES.length,
     splitRecordCount:
-      TOP20_PROGRAM_V2_OVERRIDES.length - Object.keys(PROGRAM_V2_MIGRATION_REGISTRY).length,
+      PROGRAM_V2_OVERRIDES.length - Object.keys(PROGRAM_V2_MIGRATION_REGISTRY).length,
     verification: {
       expectedFields: coverage.reduce((sum, item) => sum + item.expected, 0),
       coveredFields: coverage.reduce((sum, item) => sum + item.covered, 0),

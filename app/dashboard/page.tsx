@@ -29,12 +29,14 @@ import { ProgramSources } from "@/components/programs/detail/ProgramSources";
 import { getFieldVerification, overallVerification } from "@/lib/program-status";
 import { getTrustedRanking, getRankingByType, getRankingValue, type RankingType } from "@/lib/ranking-display";
 import { getProgramDetailView } from "@/lib/program-v2-adapter";
-import { exportSchoolListExcel, exportSchoolListPdf } from "@/lib/export-school-list";
+import { createSchoolListSnapshot, exportSchoolListExcel, exportSchoolListPdf } from "@/lib/export-school-list";
 import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMode, View, SchoolListCategory, SchoolListItem } from "@/types/application";
 import { US_MECHANICAL_PROGRAMS_ADDED } from "@/data/us-mechanical-programs-added";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useSchoolList } from "@/hooks/useSchoolList";
 import { PDFSnapshotPreview } from "@/components/dev/PDFSnapshotPreview";
+import { ApplicantProfilePanel } from "@/components/reports/ApplicantProfilePanel";
+import type { UserProfile } from "@/types/application";
 
 const SCHOOL_NAMES: Record<string, string> = {
   "Princeton University":"普林斯顿大学", "Massachusetts Institute of Technology":"麻省理工学院",
@@ -416,6 +418,7 @@ export default function Home() {
   const [notes,setNotes] = useState<Record<string,string>>({});
   const [toast,setToast] = useState("");
   const [schoolListTab,setSchoolListTab] = useState<"all" | "reach" | "match" | "safety" | "unclassified">("all");
+  const [userProfile,setUserProfile] = useState<UserProfile>({ applicationYear:"2027", targetDegree:[], targetMajor:[] });
   const backupInputRef=useRef<HTMLInputElement>(null);
   const drawerRef=useRef<HTMLElement>(null);
 
@@ -435,8 +438,33 @@ export default function Home() {
     updateNote,
     getItem,
     isInSchoolList,
-    stats: schoolListStats,
   } = useSchoolList();
+
+  const schoolListReport = useMemo(
+    () => createSchoolListSnapshot(schoolListItems, ALL_PROGRAMS, language, userProfile),
+    [schoolListItems, language, userProfile],
+  );
+  const personalizedSchoolList = schoolListReport.snapshot?.reportMeta.reportMode === "personalized";
+  const reportCategoryByLegacyId = useMemo(
+    () => new Map((schoolListReport.snapshot?.programs ?? []).map(program => [program.legacyId, program.category])),
+    [schoolListReport.snapshot],
+  );
+  const displayedSchoolListItems = useMemo(
+    () => schoolListItems.map(item => ({
+      ...item,
+      category: personalizedSchoolList
+        ? (reportCategoryByLegacyId.get(item.programId) ?? item.category)
+        : item.category,
+    })),
+    [schoolListItems, personalizedSchoolList, reportCategoryByLegacyId],
+  );
+  const displayedSchoolListStats = useMemo(
+    () => displayedSchoolListItems.reduce(
+      (stats, item) => ({ ...stats, [item.category]: stats[item.category] + 1 }),
+      { reach: 0, match: 0, safety: 0, unclassified: 0 },
+    ),
+    [displayedSchoolListItems],
+  );
 
   useEffect(() => {
     const savedCalendar=localStorage.getItem("me-calendar"); if(savedCalendar){const raw=JSON.parse(savedCalendar) as Record<string,CalendarNote>;setCalendarNotes(Object.fromEntries(Object.entries(raw).map(([date,note])=>[date,{...note,tag:LEGACY_CALENDAR_TAGS[note.tag]||note.tag}])))}
@@ -445,10 +473,12 @@ export default function Home() {
     localStorage.removeItem("me-trackers");
     const savedThemeMode=localStorage.getItem("me-theme-mode");const mode:ThemeMode=savedThemeMode==="light"||savedThemeMode==="dark"||savedThemeMode==="system"?savedThemeMode:"system";setThemeMode(mode);setDark(mode==="system"?window.matchMedia("(prefers-color-scheme: dark)").matches:mode==="dark");
     const savedLanguage=localStorage.getItem("language")||localStorage.getItem("me-language"); if(savedLanguage==="en"||savedLanguage==="zh")setLanguage(savedLanguage);
+    const savedProfile=localStorage.getItem("applyme:user-profile:v1"); if(savedProfile){try{setUserProfile(JSON.parse(savedProfile) as UserProfile)}catch{}}
   },[]);
   useEffect(()=>{localStorage.setItem("me-calendar",JSON.stringify(calendarNotes))},[calendarNotes]);
   useEffect(()=>{localStorage.setItem("me-materials",JSON.stringify(materials))},[materials]);
   useEffect(()=>{localStorage.setItem("me-notes",JSON.stringify(notes))},[notes]);
+  useEffect(()=>{localStorage.setItem("applyme:user-profile:v1",JSON.stringify(userProfile))},[userProfile]);
   useEffect(()=>{localStorage.setItem("me-theme",dark?"dark":"light");document.documentElement.dataset.theme=dark?"dark":"light"},[dark]);
   useEffect(()=>{localStorage.setItem("me-theme-mode",themeMode);const media=window.matchMedia("(prefers-color-scheme: dark)"),apply=()=>setDark(themeMode==="system"?media.matches:themeMode==="dark");apply();media.addEventListener("change",apply);return()=>media.removeEventListener("change",apply)},[themeMode]);
   useEffect(()=>{localStorage.setItem("me-language",language);localStorage.setItem("language",language);document.documentElement.lang=language==="en"?"en":"zh-CN";document.title="ApplyME | 机械工程硕士申请"},[language]);
@@ -626,7 +656,7 @@ export default function Home() {
             <button
               className="school-list-header-action-secondary"
               disabled={!schoolListItems.length}
-              onClick={() => exportSchoolListExcel({ items: schoolListItems, programs: ALL_PROGRAMS, language })}
+              onClick={() => exportSchoolListExcel({ items: schoolListItems, programs: ALL_PROGRAMS, language, userProfile })}
             >
               {en ? "Export List" : "导出名单"}
             </button>
@@ -635,7 +665,7 @@ export default function Home() {
               disabled={!schoolListItems.length}
               onClick={() => {
                 try {
-                  exportSchoolListPdf({ items: schoolListItems, programs: ALL_PROGRAMS, language });
+                  exportSchoolListPdf({ items: schoolListItems, programs: ALL_PROGRAMS, language, userProfile });
                 } catch (error) {
                   setToast(error instanceof Error ? error.message : (en ? "Unable to generate report" : "无法生成报告"));
                 }
@@ -651,14 +681,22 @@ export default function Home() {
             </button>
           </div>
         </header>
+        <ApplicantProfilePanel language={language} value={userProfile} onChange={setUserProfile} />
 
-        <SchoolListStats stats={schoolListStats()} total={schoolListItems.length} en={en} />
+        <SchoolListStats
+          stats={displayedSchoolListStats}
+          total={schoolListItems.length}
+          en={en}
+          personalized={personalizedSchoolList}
+          missingProfileFields={schoolListReport.snapshot?.applicant.completion.missingFields.length ?? 0}
+        />
 
         <SchoolListTabs
           activeTab={schoolListTab}
-          stats={schoolListStats()}
+          stats={displayedSchoolListStats}
           total={schoolListItems.length}
           en={en}
+          personalized={personalizedSchoolList}
           onTabChange={(tab) => setSchoolListTab(tab)}
         />
 
@@ -672,7 +710,7 @@ export default function Home() {
           <div className="school-list-content">
             {schoolListTab === "all" ? (
               (['reach', 'match', 'safety', 'unclassified'] as const).map(category => {
-                const categoryItems = schoolListItems.filter(item => item.category === category);
+                const categoryItems = displayedSchoolListItems.filter(item => item.category === category);
                 const categoryLabel = {
                   reach: en ? 'Reach' : '冲刺',
                   match: en ? 'Match' : '匹配',
@@ -714,10 +752,10 @@ export default function Home() {
                     match: en ? 'Match' : '匹配',
                     safety: en ? 'Safety' : '保底',
                     unclassified: en ? 'Unclassified' : '未分类'
-                  }[schoolListTab]} ({schoolListItems.filter(item => item.category === schoolListTab).length})
+                  }[schoolListTab]} ({displayedSchoolListItems.filter(item => item.category === schoolListTab).length})
                 </h2>
                 <div className="school-list-group-items">
-                  {schoolListItems
+                  {displayedSchoolListItems
                     .filter(item => item.category === schoolListTab)
                     .map(item => {
                       const program = PROGRAM_BY_ID.get(item.programId);

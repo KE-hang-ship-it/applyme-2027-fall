@@ -5,7 +5,10 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const { createPDFReportSnapshot } = await import(
-  pathToFileURL(join(tmpdir(), "applyme-pdf-report-snapshot.mjs")).href
+  pathToFileURL(
+    process.env.APPLYME_SNAPSHOT_MODULE ??
+      join(tmpdir(), "applyme-pdf-report-snapshot.mjs"),
+  ).href
 );
 
 const fixed = {
@@ -123,7 +126,142 @@ test("program ordering and Reach / Match / Safety counts are stable", () => {
     reviewCount: 0,
     missingDataCount: 3,
     historicalDataCount: 0,
+    unclassifiedCount: 0,
   });
+});
+
+test("missing profile downgrades to a candidate list without misleading zero categories", () => {
+  const programs = [
+    legacy("candidate-a"),
+    legacy("candidate-b"),
+  ];
+  const selections = [
+    selection("candidate-a", "unclassified"),
+    selection("candidate-b", "unclassified"),
+  ];
+  const result = createPDFReportSnapshot({ ...fixed, programs, selections, language: "zh" });
+  assert.equal(result.snapshot.reportMeta.reportMode, "candidate-list");
+  assert.equal(result.snapshot.reportMeta.title, "ApplyME 候选项目清单");
+  assert.equal(result.snapshot.selectionSummary.unclassifiedCount, 2);
+  assert.equal(result.snapshot.programs[0].categoryDecision.origin, "unclassified");
+  assert.ok(result.snapshot.reportMeta.profileMissingFields.includes("gpa"));
+});
+
+test("complete profile produces explainable reference categories for unclassified selections", () => {
+  const profile = {
+    applicationYear: "2027",
+    targetDegree: ["MS"],
+    targetMajor: ["Mechanical Engineering"],
+    undergraduateSchool: "Example University",
+    undergraduateMajor: "Mechanical Engineering",
+    gpa: { value: 3.8, scale: 4 },
+    toefl: { score: 105 },
+    gre: { quantitative: 168 },
+    researchExperience: [{ title: "Robotics research" }],
+    workExperience: [{ title: "Engineering internship" }],
+    projects: [],
+    targetAreas: ["Robotics"],
+    targetRegions: ["美国"],
+    budget: { amount: 100000, currency: "USD", period: "program" },
+    preferredProgramType: ["research"],
+  };
+  const result = createPDFReportSnapshot({
+    ...fixed,
+    userProfile: profile,
+    programs: [legacy("profile-program")],
+    selections: [selection("profile-program", "unclassified")],
+    language: "en",
+  });
+  const program = result.snapshot.programs[0];
+  assert.equal(result.snapshot.reportMeta.reportMode, "personalized");
+  assert.equal(program.categoryDecision.origin, "rule");
+  assert.equal(program.categoryDecision.referenceOnly, true);
+  assert.ok(program.categoryDecision.rationale.some(item => item.includes("not an admission probability")));
+});
+
+test("the seven mechanical-engineering regression projects use ProgramV2, classify, and normalize locations", () => {
+  const ids = ["vtech-me", "neu-me", "osu-me", "uiuc-me", "wisc-me", "umd-me", "duke-me"];
+  const schools = {
+    "vtech-me": "Virginia Polytechnic Institute and State University",
+    "neu-me": "Northeastern University",
+    "osu-me": "Ohio State University",
+    "uiuc-me": "University of Illinois Urbana-Champaign",
+    "wisc-me": "University of Wisconsin–Madison",
+    "umd-me": "University of Maryland, College Park",
+    "duke-me": "Duke University",
+  };
+  const profile = {
+    applicationYear: "2027",
+    targetDegree: ["MS", "MEng"],
+    targetMajor: ["Mechanical Engineering"],
+    undergraduateSchool: "Example Engineering University",
+    undergraduateMajor: "Mechanical Engineering",
+    gpa: { value: 3.65, scale: 4 },
+    toefl: { score: 105 },
+    gre: { quantitative: 167, verbal: 158, analyticalWriting: 4 },
+    researchExperience: [{ title: "Robotics laboratory research" }],
+    internshipExperience: [{ title: "Mechanical engineering internship" }],
+    projects: [{ title: "Autonomous vehicle project" }],
+    targetAreas: ["Robotics", "Controls", "Thermal fluids"],
+    targetRegions: ["United States"],
+    budget: { amount: 120000, currency: "USD", period: "program" },
+    preferredProgramType: ["research", "professional"],
+  };
+  const result = createPDFReportSnapshot({
+    ...fixed,
+    userProfile: profile,
+    language: "zh",
+    programs: ids.map(id => legacy(id, {
+      school: schools[id],
+      normalizedSchoolName: schools[id].toLowerCase(),
+      region: id === "vtech-me" ? "美国" : "United States",
+    })),
+    selections: ids.map(id => selection(id, "unclassified")),
+  });
+  assert.equal(result.snapshot.reportMeta.reportMode, "personalized");
+  assert.equal(result.snapshot.selectionSummary.totalPrograms, 7);
+  assert.equal(result.snapshot.selectionSummary.unclassifiedCount, 0);
+  assert.equal(
+    result.snapshot.selectionSummary.reachCount +
+      result.snapshot.selectionSummary.matchCount +
+      result.snapshot.selectionSummary.safetyCount,
+    7,
+  );
+  assert.ok(result.snapshot.programs.every(program => program.canonicalProgramId));
+  const vtech = result.snapshot.programs.find(program => program.legacyId === "vtech-me");
+  assert.deepEqual(
+    { city: vtech.university.city, state: vtech.university.state, country: vtech.university.country },
+    { city: "Blacksburg", state: "Virginia", country: "United States" },
+  );
+  const wisconsin = result.snapshot.programs.find(program => program.legacyId === "wisc-me");
+  assert.equal(wisconsin.programStatus, "REVIEW");
+  assert.ok(result.warnings.some(item => item.code === "SOURCE_CONFLICT" && item.legacyId === "wisc-me"));
+  const ohioState = result.snapshot.programs.find(program => program.legacyId === "osu-me");
+  assert.ok(
+    ohioState.deadlineSummary.length === 0 ||
+      ohioState.deadlineSummary.every(deadline => deadline.fieldMeta.status === "not-yet-published"),
+  );
+});
+
+test("location normalization prevents country values from occupying state", () => {
+  const result = createPDFReportSnapshot({
+    ...fixed,
+    programs: [
+      legacy("vtech-legacy", {
+        school: "Virginia Polytechnic Institute and State University",
+        normalizedSchoolName: "virginia polytechnic institute and state university",
+        state: "美国",
+        region: "美国",
+        country: undefined,
+      }),
+    ],
+    selections: [selection("vtech-legacy", "unclassified")],
+  });
+  const location = result.snapshot.programs[0].university;
+  assert.equal(location.city, "Blacksburg");
+  assert.equal(location.state, "Virginia");
+  assert.equal(location.country, "United States");
+  assert.ok(result.warnings.some(item => item.code === "LOCATION_CORRECTED"));
 });
 
 test("allowPartial=false blocks unresolved reports", () => {

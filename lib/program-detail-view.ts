@@ -41,6 +41,11 @@ export function verificationText(status: VerificationState, language: DetailLang
       pending: "待确认",
       "not-published": "尚未公布",
       "not-found": "未找到",
+      "not-required": "官网明确不要求",
+      optional: "官网明确可选",
+      waived: "符合条件可豁免",
+      "fetch-failed": "抓取或解析失败",
+      "needs-manual-review": "需人工核验",
     },
     en: {
       verified: "Verified",
@@ -48,6 +53,11 @@ export function verificationText(status: VerificationState, language: DetailLang
       pending: "Pending verification",
       "not-published": "Not published",
       "not-found": "Not found",
+      "not-required": "Not required",
+      optional: "Optional",
+      waived: "Waived when eligible",
+      "fetch-failed": "Fetch failed",
+      "needs-manual-review": "Needs manual review",
     },
   } as const;
   return labels[language][status];

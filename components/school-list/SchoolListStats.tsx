@@ -4,9 +4,32 @@ type SchoolListStatsProps = {
   stats: SchoolListStatsType;
   total: number;
   en: boolean;
+  personalized?: boolean;
+  missingProfileFields?: number;
 };
 
-export function SchoolListStats({ stats, total, en }: SchoolListStatsProps) {
+export function SchoolListStats({
+  stats,
+  total,
+  en,
+  personalized = false,
+  missingProfileFields = 0,
+}: SchoolListStatsProps) {
+  if (!personalized) {
+    return (
+      <div className="school-list-stats" aria-label={en ? "Candidate list summary" : "候选项目清单摘要"}>
+        <div className="school-list-stat-card school-list-stat-total">
+          <span className="school-list-stat-title">{en ? "Candidate programs" : "候选项目"}</span>
+          <b className="school-list-stat-value">{total}</b>
+          <span className="school-list-stat-description">
+            {en
+              ? `Complete ${missingProfileFields} missing profile fields to generate reference Reach / Match / Safety categories.`
+              : `补充剩余 ${missingProfileFields} 项申请者画像后，可生成冲刺 / 匹配 / 保底参考分类。`}
+          </span>
+        </div>
+      </div>
+    );
+  }
   const cards = [
     {
       key: "total",

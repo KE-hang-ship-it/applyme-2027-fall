@@ -15,6 +15,21 @@ import type {
 
 export type SnapshotLanguage = "zh" | "en";
 
+export type SnapshotReportMode = "personalized" | "candidate-list";
+
+export type SnapshotDataStatus =
+  | "verified"
+  | "not-required"
+  | "optional"
+  | "waived"
+  | "not-yet-published"
+  | "not-found"
+  | "fetch-failed"
+  | "needs-manual-review"
+  | "historical-reference";
+
+export type SnapshotConfidence = "high" | "medium" | "low";
+
 export type SnapshotWarningCode =
   | "HISTORICAL_DEADLINE"
   | "PENDING_VERIFICATION"
@@ -26,8 +41,13 @@ export type SnapshotWarningCode =
   | "SPLIT_PROGRAM_UNRESOLVED"
   | "LEGACY_ONLY_PROGRAM"
   | "MISSING_USER_PROFILE"
+  | "INCOMPLETE_USER_PROFILE"
   | "UNKNOWN_PROGRAM"
-  | "MISSING_OFFICIAL_SOURCE";
+  | "MISSING_OFFICIAL_SOURCE"
+  | "FETCH_FAILED"
+  | "SOURCE_CONFLICT"
+  | "LOCATION_CORRECTED"
+  | "STALE_APPLICATION_CYCLE";
 
 export type SnapshotWarningSeverity = "blocking" | "warning" | "info";
 
@@ -47,8 +67,23 @@ export type SnapshotWarning = {
 export type SnapshotSource = {
   field: string;
   url: string;
+  domain: string;
+  official: boolean;
+  applicationCycle?: string;
+  status: SnapshotDataStatus;
+  confidence: SnapshotConfidence;
   verificationStatus?: VerificationState;
   lastVerifiedAt?: string;
+};
+
+export type SnapshotFieldMeta = {
+  status: SnapshotDataStatus;
+  confidence: SnapshotConfidence;
+  sourceUrl?: string;
+  sourceDomain?: string;
+  applicationCycle?: string;
+  lastVerifiedAt?: string;
+  note?: string;
 };
 
 export type SnapshotDeadline = {
@@ -62,6 +97,7 @@ export type SnapshotDeadline = {
   isCurrentCycle: boolean;
   sourceUrl?: string;
   lastVerifiedAt?: string;
+  fieldMeta: SnapshotFieldMeta;
 };
 
 export type SnapshotRequirements = {
@@ -78,6 +114,12 @@ export type SnapshotRequirements = {
   sop: DocumentRequirement | null;
   credits: string | null;
   duration: string | null;
+  fieldMeta: Partial<
+    Record<
+      "applicationFee" | "gre" | "toefl" | "ielts" | "letters" | "cv" | "sop" | "credits" | "duration",
+      SnapshotFieldMeta
+    >
+  >;
 };
 
 export type SnapshotTuition = {
@@ -93,6 +135,13 @@ export type SnapshotTuition = {
   sourceUrl?: string;
   lastVerifiedAt?: string;
   unavailable: boolean;
+  estimatedProgramTotal: {
+    amount: number | null;
+    currency?: CurrencyCode;
+    displayText?: string;
+    status: SnapshotDataStatus;
+  } | null;
+  fieldMeta: SnapshotFieldMeta;
 };
 
 export type SnapshotApplicant = {
@@ -109,12 +158,19 @@ export type SnapshotApplicant = {
   ielts?: UserProfile["ielts"];
   gre?: UserProfile["gre"];
   researchExperience: NonNullable<UserProfile["researchExperience"]>;
+  internshipExperience: NonNullable<UserProfile["internshipExperience"]>;
   workExperience: NonNullable<UserProfile["workExperience"]>;
   projects: NonNullable<UserProfile["projects"]>;
   targetAreas: string[];
   targetRegions: NonNullable<UserProfile["targetRegions"]>;
   budget?: UserProfile["budget"];
   degreePreferences: NonNullable<UserProfile["preferredProgramType"]>;
+  completion: {
+    complete: boolean;
+    presentFields: string[];
+    missingFields: string[];
+    completionRate: number;
+  };
 };
 
 export type PDFReportSnapshotProgram = {
@@ -134,6 +190,12 @@ export type PDFReportSnapshotProgram = {
   degree: string;
   field: string;
   category: UserSelection["category"];
+  categoryDecision: {
+    value: UserSelection["category"];
+    origin: "user" | "rule" | "unclassified";
+    referenceOnly: true;
+    rationale: string[];
+  };
   priority: SelectionPriority;
   programStatus: ProgramStatus;
   whySelected: string[];
@@ -155,6 +217,14 @@ export type PDFReportSnapshotProgram = {
   highlights: string[];
   bestFit: string[];
   riskFactors: string[];
+  unmetRequirements: string[];
+  nextActions: string[];
+  programAttributes: {
+    degreeType: "MS" | "MENG" | "OTHER";
+    thesisMode: "thesis" | "non-thesis" | "both" | "not-confirmed";
+    orientation: "research" | "professional" | "coursework" | "mixed" | "not-confirmed";
+    explanation: string;
+  };
   officialSources: SnapshotSource[];
   verificationSummary: {
     overallStatus: "VERIFIED" | "PARTIAL" | "NEEDS_REVIEW";
@@ -163,6 +233,7 @@ export type PDFReportSnapshotProgram = {
     pendingFields: string[];
     unavailableFields: string[];
     lastReviewedAt?: string;
+    confidence: SnapshotConfidence;
   };
   missingDataWarnings: SnapshotWarning[];
 };
@@ -171,11 +242,14 @@ export type PDFReportSnapshot = {
   reportMeta: {
     reportId: string;
     schemaVersion: "1.0";
+    reportMode: SnapshotReportMode;
+    title: string;
     generatedAt: string;
     language: SnapshotLanguage;
     applicationCycle: string;
     dataVerifiedThrough: string | null;
     warnings: SnapshotWarning[];
+    profileMissingFields: string[];
   };
   applicant: SnapshotApplicant;
   selectionSummary: {
@@ -186,6 +260,7 @@ export type PDFReportSnapshot = {
     reviewCount: number;
     missingDataCount: number;
     historicalDataCount: number;
+    unclassifiedCount: number;
   };
   programs: PDFReportSnapshotProgram[];
   reportWarnings: SnapshotWarning[];
