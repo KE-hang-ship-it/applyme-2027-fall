@@ -29,6 +29,7 @@ import { ProgramSources } from "@/components/programs/detail/ProgramSources";
 import { getFieldVerification, overallVerification } from "@/lib/program-status";
 import { getTrustedRanking, getRankingByType, getRankingValue, type RankingType } from "@/lib/ranking-display";
 import { getProgramDetailView } from "@/lib/program-v2-adapter";
+import { exportSchoolListCsv, exportSchoolListPdf } from "@/lib/export-school-list";
 import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMode, View, SchoolListCategory, SchoolListItem } from "@/types/application";
 import { US_MECHANICAL_PROGRAMS_ADDED } from "@/data/us-mechanical-programs-added";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -622,6 +623,26 @@ export default function Home() {
             <p>{en ? "Organize your reach, match, and safety programs into a clear school selection plan." : "整理你的冲刺、匹配和保底项目，建立清晰的选校方案。"}</p>
           </div>
           <div className="school-list-header-actions">
+            <button
+              className="school-list-header-action-secondary"
+              disabled={!schoolListItems.length}
+              onClick={() => exportSchoolListCsv({ items: schoolListItems, programs: ALL_PROGRAMS, language })}
+            >
+              {en ? "Export List" : "导出名单"}
+            </button>
+            <button
+              className="school-list-header-action-secondary"
+              disabled={!schoolListItems.length}
+              onClick={() => {
+                try {
+                  exportSchoolListPdf({ items: schoolListItems, programs: ALL_PROGRAMS, language });
+                } catch (error) {
+                  setToast(error instanceof Error ? error.message : (en ? "Unable to generate report" : "无法生成报告"));
+                }
+              }}
+            >
+              {en ? "Export PDF" : "导出 PDF"}
+            </button>
             <button className="school-list-header-action-primary" onClick={() => setView("schools")}>
               {en ? "Add Programs" : "去项目库添加项目"}
             </button>

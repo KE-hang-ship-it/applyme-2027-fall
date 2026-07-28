@@ -247,6 +247,7 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{cursor:not-al
 .school-list-header-action-primary:hover{filter:brightness(1.08)}
 .school-list-header-action-secondary{min-height:44px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);color:var(--text);padding:10px 16px;font-size:11px;font-weight:700;white-space:nowrap}
 .school-list-header-action-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.school-list-header-action-secondary:disabled{cursor:not-allowed;opacity:.45;border-color:var(--hairline);color:var(--subtle)}
 
 .school-list-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
 .school-list-stat-card{position:relative;padding:18px 20px;border-radius:16px;border:1px solid var(--hairline);background:var(--surface);transition:border-color .18s,background .18s}
