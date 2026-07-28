@@ -443,7 +443,7 @@ export default function Home() {
     const savedNotes=localStorage.getItem("me-notes"); if(savedNotes)setNotes(JSON.parse(savedNotes));
     localStorage.removeItem("me-trackers");
     const savedThemeMode=localStorage.getItem("me-theme-mode");const mode:ThemeMode=savedThemeMode==="light"||savedThemeMode==="dark"||savedThemeMode==="system"?savedThemeMode:"system";setThemeMode(mode);setDark(mode==="system"?window.matchMedia("(prefers-color-scheme: dark)").matches:mode==="dark");
-    const savedLanguage=localStorage.getItem("me-language")||localStorage.getItem("language"); if(savedLanguage==="en"||savedLanguage==="zh")setLanguage(savedLanguage);
+    const savedLanguage=localStorage.getItem("language")||localStorage.getItem("me-language"); if(savedLanguage==="en"||savedLanguage==="zh")setLanguage(savedLanguage);
   },[]);
   useEffect(()=>{localStorage.setItem("me-calendar",JSON.stringify(calendarNotes))},[calendarNotes]);
   useEffect(()=>{localStorage.setItem("me-materials",JSON.stringify(materials))},[materials]);
