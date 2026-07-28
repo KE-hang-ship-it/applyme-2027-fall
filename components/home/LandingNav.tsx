@@ -6,13 +6,11 @@ const NAV_TEXTS = {
   zh: {
     product: "产品介绍",
     features: "核心功能",
-    getStarted: "开始使用",
     langBtn: "EN",
   },
   en: {
     product: "Product",
     features: "Features",
-    getStarted: "Get Started",
     langBtn: "中",
   },
 };
@@ -46,12 +44,6 @@ export default function LandingNav({
         <div className="landing-nav-right">
           <button className="landing-lang-btn" onClick={onToggleLanguage}>
             {t.langBtn}
-          </button>
-          <button
-            className="landing-cta-btn"
-            onClick={() => router.push("/dashboard")}
-          >
-            {t.getStarted}
           </button>
         </div>
       </div>
@@ -125,20 +117,6 @@ export default function LandingNav({
         }
         .landing-lang-btn:hover {
           border-color: var(--landing-accent);
-        }
-        .landing-cta-btn {
-          padding: 8px 20px;
-          background: var(--landing-accent);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.2s ease;
-        }
-        .landing-cta-btn:hover {
-          background: var(--landing-accent-hover);
         }
         @media (max-width: 700px) {
           .landing-nav-inner {

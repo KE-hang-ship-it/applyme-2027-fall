@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 const HERO_TEXTS = {
   zh: {
@@ -38,13 +37,18 @@ export default function HeroSection({
   language: "zh" | "en";
 }) {
   const [mounted, setMounted] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const t = HERO_TEXTS[language];
+  const schools = [
+    { name: t.school1, domain: "mit.edu" },
+    { name: t.school2, domain: "stanford.edu" },
+    { name: t.school3, domain: "cmu.edu" },
+    { name: t.school4, domain: "utexas.edu" },
+  ];
 
   return (
     <section id="product" className="landing-hero" data-language={language}>
@@ -110,45 +114,27 @@ export default function HeroSection({
           }}
         >
           <div className="landing-school-cards">
-            <div className="landing-school-card landing-school-card-1">
-              <div className="landing-school-logo">
-                <span>{t.school1[0]}</span>
+            {schools.map((school, index) => (
+              <div
+                className={`landing-school-card landing-school-card-${index + 1}`}
+                key={school.domain}
+              >
+                <div className="landing-school-logo">
+                  <img
+                    src={`https://www.google.com/s2/favicons?domain_url=https://${school.domain}&sz=128`}
+                    alt={`${school.name} ${language === "zh" ? "校徽" : "logo"}`}
+                    loading="eager"
+                    decoding="async"
+                  />
+                </div>
+                <div className="landing-school-info">
+                  <div className="landing-school-name">{school.name}</div>
+                  <div className="landing-school-rank">
+                    {language === "zh" ? "机械工程硕士项目" : "Mechanical Engineering master's"}
+                  </div>
+                </div>
               </div>
-              <div className="landing-school-info">
-                <div className="landing-school-name">{t.school1}</div>
-                <div className="landing-school-rank">#1 · {language === "zh" ? "全球" : "World"}</div>
-              </div>
-            </div>
-
-            <div className="landing-school-card landing-school-card-2">
-              <div className="landing-school-logo">
-                <span>{t.school2[0]}</span>
-              </div>
-              <div className="landing-school-info">
-                <div className="landing-school-name">{t.school2}</div>
-                <div className="landing-school-rank">#2 · {language === "zh" ? "全球" : "World"}</div>
-              </div>
-            </div>
-
-            <div className="landing-school-card landing-school-card-3">
-              <div className="landing-school-logo">
-                <span>{t.school3[0]}</span>
-              </div>
-              <div className="landing-school-info">
-                <div className="landing-school-name">{t.school3}</div>
-                <div className="landing-school-rank">#8 · {language === "zh" ? "全球" : "World"}</div>
-              </div>
-            </div>
-
-            <div className="landing-school-card landing-school-card-4">
-              <div className="landing-school-logo">
-                <span>{t.school4[0]}</span>
-              </div>
-              <div className="landing-school-info">
-                <div className="landing-school-name">{t.school4}</div>
-                <div className="landing-school-rank">#34 · {language === "zh" ? "全球" : "World"}</div>
-              </div>
-            </div>
+            ))}
           </div>
 
           <div className="landing-path-line">
@@ -322,6 +308,12 @@ export default function HeroSection({
           font-weight: 700;
           font-size: 18px;
           color: var(--landing-accent);
+        }
+        .landing-school-logo img {
+          width: 36px;
+          height: 36px;
+          object-fit: contain;
+          border-radius: 8px;
         }
         .landing-school-info {
           display: flex;
