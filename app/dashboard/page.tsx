@@ -33,6 +33,7 @@ import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMo
 import { US_MECHANICAL_PROGRAMS_ADDED } from "@/data/us-mechanical-programs-added";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useSchoolList } from "@/hooks/useSchoolList";
+import { PDFSnapshotPreview } from "@/components/dev/PDFSnapshotPreview";
 
 const SCHOOL_NAMES: Record<string, string> = {
   "Princeton University":"普林斯顿大学", "Massachusetts Institute of Technology":"麻省理工学院",
@@ -510,6 +511,11 @@ export default function Home() {
   const categoryName=(value:string)=>en?({Favorite:"Saved",Dream:"Reach",Target:"Target",Safety:"Safer",Priority:"Priority"} as Record<string,string>)[value]||value:CATEGORY_LABELS[value as Category]||value;
 
   return <main className="app-shell" data-language={language}>
+    <PDFSnapshotPreview
+      programs={ALL_PROGRAMS}
+      schoolListItems={schoolListItems}
+      initialLanguage={language}
+    />
     <aside className="sidebar" style={{position:"fixed"}}>
       <a className="logo brand-link" href="./" aria-label={en?"ApplyME home":"返回 ApplyME 首页"} onClick={event=>{event.preventDefault();setView("dashboard");setSelected(null);window.scrollTo({top:0,behavior:"smooth"})}}>
         <img className="brand-logo-desktop" src="./brand/applyme-horizontal.png" alt="ApplyME — Plan smarter. Apply better." style={{display:dark?"none":undefined}}/>

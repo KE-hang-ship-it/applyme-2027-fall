@@ -12,6 +12,7 @@
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "data:check": "node scripts/check-program-data.mjs",
+    "snapshot:test": "node -e \"const p=require('path');require('esbuild').buildSync({entryPoints:[p.join(process.cwd(),'lib/create-pdf-report-snapshot.ts')],bundle:true,platform:'node',format:'esm',outfile:p.join(require('os').tmpdir(),'applyme-pdf-report-snapshot.mjs')})\" && node --test tests/pdf-report-snapshot.test.mjs",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
