@@ -59,7 +59,9 @@ export function CompareBar({ compare, programs, onRemove, onCompare, language, s
             >
               <SchoolLogo program={program} size="small" />
               <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--text)", whiteSpace: "nowrap" }}>
-                {schoolNames[program.school] || program.school.split(" ")[0]}
+                {language === "en"
+                  ? program.school
+                  : schoolNames[program.school] || program.school}
               </span>
               <button
                 onClick={() => onRemove(id)}
@@ -104,7 +106,7 @@ export function CompareBar({ compare, programs, onRemove, onCompare, language, s
           whiteSpace: "nowrap",
         }}
       >
-        {language === "zh" ? "对比" : "Compare"} {compare.length} {language === "zh" ? "所学校" : "Programs"}
+        {language === "zh" ? `对比 ${compare.length} 个项目` : `Compare ${compare.length} programs`}
       </button>
     </div>
   );

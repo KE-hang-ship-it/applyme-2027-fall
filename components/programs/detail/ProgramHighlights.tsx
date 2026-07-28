@@ -1,7 +1,7 @@
 "use client";
 
 import type { ProgramV2 } from "@/types/application";
-import { fieldVerification, NO_OFFICIAL_DATA } from "@/lib/program-detail-view";
+import { fieldVerification, localizedDetailText, NO_OFFICIAL_DATA } from "@/lib/program-detail-view";
 import { VerificationStatus } from "../VerificationStatus";
 
 type Props = { program: ProgramV2; language: "zh" | "en" };
@@ -9,17 +9,20 @@ type Props = { program: ProgramV2; language: "zh" | "en" };
 export function ProgramHighlights({ program, language }: Props) {
   const zh = language === "zh";
   const insight = program.insights;
-  const bestFit = insight?.bestFit?.length
-    ? insight.bestFit
+  const localizedBestFit = (insight?.bestFit || []).filter(item => localizedDetailText(item, language));
+  const localizedHighlights = (insight?.highlights || []).filter(item => localizedDetailText(item, language));
+  const localizedRisks = (insight?.riskFactors || []).filter(item => localizedDetailText(item, language));
+  const bestFit = localizedBestFit.length
+    ? localizedBestFit
     : program.tracks?.length
       ? [zh ? `适合关注 ${program.tracks.slice(0, 3).map(item => item.name).join("、")} 的申请者` : `Applicants interested in ${program.tracks.slice(0, 3).map(item => item.name).join(", ")}`]
       : [NO_OFFICIAL_DATA[language]];
-  const highlights = insight?.highlights?.length
-    ? insight.highlights
-    : program.programSummary
-      ? [program.programSummary]
+  const highlights = localizedHighlights.length
+    ? localizedHighlights
+    : localizedDetailText(program.programSummary, language)
+      ? [localizedDetailText(program.programSummary, language)!]
       : [NO_OFFICIAL_DATA[language]];
-  const risks = insight?.riskFactors?.length ? insight.riskFactors : [NO_OFFICIAL_DATA[language]];
+  const risks = localizedRisks.length ? localizedRisks : [NO_OFFICIAL_DATA[language]];
   const status = fieldVerification(program, "riskFactors") ??
     fieldVerification(program, "highlights") ??
     fieldVerification(program, "bestFit") ??

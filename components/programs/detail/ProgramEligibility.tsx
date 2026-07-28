@@ -5,6 +5,7 @@ import {
   fieldVerification,
   formatGRE,
   formatLanguageRequirement,
+  localizedDetailText,
   NO_OFFICIAL_DATA,
 } from "@/lib/program-detail-view";
 import { VerificationStatus } from "../VerificationStatus";
@@ -15,11 +16,12 @@ export function ProgramEligibility({ program, language }: Props) {
   const zh = language === "zh";
   const background = program.insights?.backgroundRequirement;
   const req = program.applicationRequirements;
-  const backgroundText = background?.note ||
-    [
-      ...(background?.preferredMajors || []),
-      ...(background?.acceptedRelatedMajors || []),
-    ].join(", ") ||
+  const localizedMajors = [
+    ...(background?.preferredMajors || []),
+    ...(background?.acceptedRelatedMajors || []),
+  ].filter(item => localizedDetailText(item, language));
+  const backgroundText = localizedDetailText(background?.note, language) ||
+    localizedMajors.join(", ") ||
     program.field ||
     NO_OFFICIAL_DATA[language];
   const fields = [
@@ -52,7 +54,9 @@ export function ProgramEligibility({ program, language }: Props) {
         <div className="program-detail-summary">
           <h3 className="program-detail-summary-title">{zh ? "先修课程" : "Prerequisites"}</h3>
           <ul className="program-detail-summary-list">
-            {background.prerequisiteCourses.map(course => <li key={course}>{course}</li>)}
+            {background.prerequisiteCourses
+              .filter(course => localizedDetailText(course, language))
+              .map(course => <li key={course}>{course}</li>)}
           </ul>
         </div>
       ) : null}

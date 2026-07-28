@@ -10,6 +10,17 @@ import type {
 
 export type DetailLanguage = "zh" | "en";
 
+export function localizedDetailText(
+  value: string | null | undefined,
+  language: DetailLanguage,
+) {
+  if (!value) return undefined;
+  const containsChinese = /[\u3400-\u9fff]/.test(value);
+  return language === "zh"
+    ? containsChinese ? value : undefined
+    : containsChinese ? undefined : value;
+}
+
 export const NO_OFFICIAL_DATA = {
   zh: "暂无官方数据",
   en: "No official data",
@@ -57,7 +68,7 @@ export function formatDocument(
   if (!value || value.required === null) return NO_OFFICIAL_DATA[language];
   if (!value.required) return language === "zh" ? "不要求" : "Not required";
   if (value.count) return language === "zh" ? `${value.count} 份` : `${value.count}`;
-  return value.note || (language === "zh" ? "要求提交" : "Required");
+  return localizedDetailText(value.note, language) || (language === "zh" ? "要求提交" : "Required");
 }
 
 export function formatGRE(value: GRERequirement | undefined, language: DetailLanguage) {
@@ -68,7 +79,7 @@ export function formatGRE(value: GRERequirement | undefined, language: DetailLan
     "not-required": language === "zh" ? "不要求" : "Not required",
     "not-accepted": language === "zh" ? "不接受" : "Not accepted",
   } as const;
-  return [labels[value.status], value.minimumScore, value.note].filter(Boolean).join(" · ");
+  return [labels[value.status], value.minimumScore, localizedDetailText(value.note, language)].filter(Boolean).join(" · ");
 }
 
 export function formatLanguageRequirement(
@@ -85,7 +96,7 @@ export function formatLanguageRequirement(
       : language === "zh"
         ? "要求"
         : "Required",
-    value.note,
+    localizedDetailText(value.note, language),
   ].filter(Boolean).join(" · ");
 }
 

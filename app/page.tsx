@@ -18,7 +18,8 @@ export default function LandingPage() {
   useEffect(() => {
     setMounted(true);
 
-    const savedLang = localStorage.getItem("language");
+    const savedLang =
+      localStorage.getItem("me-language") || localStorage.getItem("language");
     if (savedLang) setLanguage(savedLang as "zh" | "en");
 
     const savedTheme = localStorage.getItem("theme-mode");
@@ -46,6 +47,7 @@ export default function LandingPage() {
   const toggleLanguage = () => {
     const next = language === "zh" ? "en" : "zh";
     setLanguage(next);
+    localStorage.setItem("me-language", next);
     localStorage.setItem("language", next);
   };
 
