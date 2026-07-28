@@ -29,7 +29,7 @@ import { ProgramSources } from "@/components/programs/detail/ProgramSources";
 import { getFieldVerification, overallVerification } from "@/lib/program-status";
 import { getTrustedRanking, getRankingByType, getRankingValue, type RankingType } from "@/lib/ranking-display";
 import { getProgramDetailView } from "@/lib/program-v2-adapter";
-import { exportSchoolListCsv, exportSchoolListPdf } from "@/lib/export-school-list";
+import { exportSchoolListExcel, exportSchoolListPdf } from "@/lib/export-school-list";
 import type { CalendarNote, Category, ChatMessage, CostProfile, Program, ThemeMode, View, SchoolListCategory, SchoolListItem } from "@/types/application";
 import { US_MECHANICAL_PROGRAMS_ADDED } from "@/data/us-mechanical-programs-added";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -626,7 +626,7 @@ export default function Home() {
             <button
               className="school-list-header-action-secondary"
               disabled={!schoolListItems.length}
-              onClick={() => exportSchoolListCsv({ items: schoolListItems, programs: ALL_PROGRAMS, language })}
+              onClick={() => exportSchoolListExcel({ items: schoolListItems, programs: ALL_PROGRAMS, language })}
             >
               {en ? "Export List" : "导出名单"}
             </button>
