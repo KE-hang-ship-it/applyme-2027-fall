@@ -111,6 +111,17 @@ body,button,input,select,textarea{font-family:"Arial Rounded MT Bold","Microsoft
 @media(max-width:700px){.page:before,.command-overview:after,.compact-summary:after{display:none}.today-focus:before{font-size:36px}.toolbar:before{display:none}.materials-list .material-row:before{display:none}}
 @media(prefers-reduced-motion:reduce){.assistant-launcher:before{animation:none}.primary-nav button:after{transition:none}}
 
+/* Compact Dashboard workspace header */
+.command-overview{grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);align-items:center;gap:24px;margin-bottom:28px;padding:24px 26px;min-height:0}
+.command-overview:after{content:"ME";width:auto;height:auto;right:18px;top:-20px;border:0;border-radius:0;background:none;color:color-mix(in srgb,var(--accent) 7%,transparent);font-size:94px;font-weight:900;line-height:1;transform:none}
+.command-overview h2:after,.command-metrics button:after{content:none}
+.command-intro{min-width:0}.command-intro h2{max-width:680px;margin:7px 0 6px;font-size:27px;line-height:1.25;overflow-wrap:anywhere}.command-intro p{max-width:620px;line-height:1.65}
+.command-progress{display:grid;grid-template-columns:minmax(110px,220px) minmax(0,1fr);align-items:center;gap:10px;margin-top:16px}.command-progress:before{content:"";grid-area:1/1;display:block;height:6px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,var(--surface-3))}.command-progress i{grid-area:1/1;display:block;max-width:100%;height:6px;border-radius:999px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#7db7ca))}.command-progress small{color:var(--subtle);font-size:10px;line-height:1.4}
+.command-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%}.command-metrics button{min-width:0;min-height:82px;padding:13px 15px;border-radius:15px}.command-metrics small{line-height:1.35;overflow-wrap:anywhere}.command-metrics b{margin-top:6px;font-size:24px;line-height:1}
+@media(max-width:900px){.command-overview{grid-template-columns:1fr}.command-metrics{max-width:none}}
+@media(max-width:620px){.command-overview{gap:18px;margin-bottom:22px;padding:20px 16px}.command-intro h2{font-size:23px}.command-progress{grid-template-columns:minmax(90px,1fr) minmax(0,1.25fr)}.command-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.command-metrics button{min-height:75px;padding:12px}.command-metrics b{font-size:21px}}
+@media(max-width:340px){.command-overview{padding-inline:13px}.command-intro h2{font-size:21px}.command-progress{grid-template-columns:1fr}.command-progress small{grid-row:2}.command-metrics button{padding:10px}.command-metrics small{font-size:9px}}
+
 /* Softer decorative revision: color blocks, lines and sparkles */
 .page{background-image:linear-gradient(color-mix(in srgb,var(--accent) 3%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--accent) 3%,transparent) 1px,transparent 1px);background-size:36px 36px}.page:before{display:none}
 .sidebar:before{width:88px;height:188px;right:-64px;top:92px;border:0;border-radius:28px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent);transform:rotate(12deg)}.sidebar:after{width:84px;height:26px;left:-45px;bottom:115px;border:0;border-radius:9px;background:color-mix(in srgb,#e8a55b 12%,transparent);transform:rotate(-18deg)}
@@ -584,3 +595,7 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{cursor:not-al
 .report-profile-grid .wide{grid-column:span 3}
 .report-profile-note{margin:12px 0 0;color:var(--muted,#718096);font-size:12px}
 @media(max-width:760px){.report-profile-panel summary{align-items:flex-start;flex-direction:column}.report-profile-grid{grid-template-columns:1fr}.report-profile-grid .wide{grid-column:auto}}
+
+/* Dashboard workspace final cascade guards */
+.command-overview:after{content:"ME";width:auto;height:auto;right:18px;top:-20px;border:0;border-radius:0;background:none;color:color-mix(in srgb,var(--accent) 7%,transparent);font-size:94px;font-weight:900;line-height:1;transform:none}
+.command-overview h2:after,.command-metrics button:after{content:none}

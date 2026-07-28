@@ -494,7 +494,7 @@ function buildProgram(
     programNameZh: detail.programZh,
     degree: detail.degree,
     field: detail.field,
-    category: categoryDecision.value,
+    category: selection.category,
     categoryDecision,
     priority: selection.priority ?? "unset",
     programStatus: detail.programStatus ?? "REVIEW",

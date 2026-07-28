@@ -189,8 +189,10 @@ export type PDFReportSnapshotProgram = {
   programNameZh?: string;
   degree: string;
   field: string;
+  /** The category explicitly stored on the user's school-list item. */
   category: UserSelection["category"];
   categoryDecision: {
+    /** A secondary system reference when origin is "rule"; never overrides category. */
     value: UserSelection["category"];
     origin: "user" | "rule" | "unclassified";
     referenceOnly: true;

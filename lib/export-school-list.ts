@@ -649,6 +649,9 @@ function projectCard(program: PDFReportSnapshotProgram, language: SnapshotLangua
   const zh = language === "zh";
   const requirements = program.admissionsRequirements;
   const website = programWebsite(program);
+  const suggestedCategory = program.categoryDecision.origin === "rule"
+    ? categoryLabels[language][program.categoryDecision.value]
+    : null;
   const programStatusLabel = zh
     ? {
         ACTIVE: "正常",
@@ -710,16 +713,17 @@ function projectCard(program: PDFReportSnapshotProgram, language: SnapshotLangua
   const location = [program.university.city, program.university.state, program.university.country]
     .filter(Boolean)
     .join(", ");
-  return `<article class="program-card">
+  return `<article class="program-card category-${program.category}">
     <div class="program-head">
       <div>
-        <p class="eyebrow">${escapeHtml(categoryLabels[language][program.category])}</p>
+        <p class="category-label">${zh ? "我的分类" : "My category"} · ${escapeHtml(categoryLabels[language][program.category])}</p>
         <h2>${escapeHtml(zh && program.university.nameZh ? program.university.nameZh : program.university.name)}</h2>
         <p>${escapeHtml(zh && program.programNameZh ? program.programNameZh : program.programName)} · ${escapeHtml(program.degree)}</p>
         ${location ? `<p>${escapeHtml(location)}</p>` : ""}
       </div>
       <span class="status">${escapeHtml(programStatusLabel)}</span>
     </div>
+    ${suggestedCategory ? `<div class="suggested-category"><b>${zh ? "系统参考" : "Suggested category"}: ${escapeHtml(suggestedCategory)}</b>${list(program.categoryDecision.rationale, "", 2)}</div>` : ""}
     <div class="fact-grid">
       <div class="deadline-fact"><b>${zh ? "截止日期" : "Deadline"}</b>${deadlineHtml(program, language)}</div>
       <div><b>GRE</b><span>${escapeHtml(greLabel(requirements.gre, language))}</span></div>
@@ -739,12 +743,30 @@ function projectCard(program: PDFReportSnapshotProgram, language: SnapshotLangua
   </article>`;
 }
 
-export function buildSchoolListReportHtml(snapshot: PDFReportSnapshot) {
+export function buildSchoolListReportHtml(
+  snapshot: PDFReportSnapshot,
+  brandUrl = "/brand/applyme-horizontal.png",
+) {
   const language = snapshot.reportMeta.language;
   const zh = language === "zh";
   const summary = snapshot.selectionSummary;
   const warnings = warningSummary(snapshot);
   const personalized = snapshot.reportMeta.reportMode === "personalized";
+  const categoryOrder = ["reach", "match", "safety", "unclassified"] as const;
+  const categoryGroups = categoryOrder.flatMap(category => {
+    const programs = snapshot.programs.filter(program => program.category === category);
+    if (!programs.length) return [];
+    const countLabel = zh ? `${programs.length} 个项目` : `${programs.length} program${programs.length === 1 ? "" : "s"}`;
+    return [{
+      category,
+      html: `<section class="category-group" data-category="${category}"><header class="category-heading"><i></i><div><h2>${escapeHtml(categoryLabels[language][category])}</h2><p>${escapeHtml(countLabel)}</p></div></header>${programs.map(program => projectCard(program, language)).join("")}</section>`,
+    }];
+  });
+  const generatedDate = new Date(snapshot.reportMeta.generatedAt).toLocaleDateString(zh ? "zh-CN" : "en-US");
+  const reportType = personalized
+    ? (zh ? "个性化选校报告" : "Personalized School Selection Report")
+    : (zh ? "候选项目清单" : "Candidate Program List");
+  const darkBrandUrl = brandUrl.replace("applyme-horizontal.png", "applyme-horizontal-dark.png");
   return `<!doctype html>
 <html lang="${language}">
 <head>
@@ -766,21 +788,29 @@ export function buildSchoolListReportHtml(snapshot: PDFReportSnapshot) {
     .page-content{height:269mm;overflow:hidden}
     .page-footer{position:absolute;right:12mm;bottom:7mm;left:12mm;display:flex;justify-content:space-between;border-top:1px solid #e5ebf2;padding-top:3mm;color:#64748b;font-size:9px}
     .cover{height:100%}
-    .hero{padding:20px 22px;color:#fff;background:linear-gradient(135deg,#102d4f,#27659a);border-radius:16px}
+    .hero{padding:18px 20px;color:#fff;background:linear-gradient(135deg,#102d4f,#27659a);border-radius:16px}
+    .brand-logo{display:block;width:142px;height:auto;max-height:38px;object-fit:contain;object-position:left center}
+    .hero .brand-logo{margin-bottom:13px}
     .hero h1{font-size:24px;line-height:1.25}
-    .meta{margin-top:6px;opacity:.82}
-    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
-    .summary div{padding:10px;border:1px solid #dbe4ee;border-radius:10px;background:#f7f9fc}
+    .meta{display:flex;flex-wrap:wrap;gap:5px 18px;margin-top:9px;opacity:.88}.meta span{white-space:normal}
+    .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:13px 0}
+    .summary div{padding:9px;border:1px solid #dbe4ee;border-radius:10px;background:#f7f9fc}
+    .summary .reach{background:#fff2f2;border-color:#efd4d4}.summary .match{background:#fff8e6;border-color:#eadcaf}.summary .safety{background:#eef8f1;border-color:#cfe4d5}.summary .unclassified{background:#f1f4f7;border-color:#d8e0e8}
     .summary span,.summary b{display:block}.summary b{font-size:19px}
     .warnings{padding:12px 14px;border:1px solid #f0d8a7;border-radius:12px;background:#fff9eb}
     .warnings h2{font-size:14px}.warnings ul{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin:8px 0 0;padding-left:18px}
     .cover-note{margin-top:14px;color:#64748b}
-    .program-card{margin:0 0 5mm;padding:12px 14px;border:1px solid #dbe4ee;border-radius:14px;background:#fff;break-inside:avoid;break-inside:avoid-page;page-break-inside:avoid;box-shadow:0 3px 10px rgba(23,45,74,.04)}
+    .page-brand{display:flex;align-items:center;height:11mm;margin-bottom:4mm;border-bottom:1px solid #e5ebf2}.page-brand .brand-logo{width:92px;max-height:25px}
+    .category-heading{display:flex;align-items:center;gap:9px;margin:0 0 4mm;padding:2mm 1mm;break-after:avoid;page-break-after:avoid}.category-heading i{width:9px;height:9px;border:2px solid currentColor;border-radius:50%}.category-heading h2{font-size:15px}.category-heading p{color:#64748b}
+    .category-group[data-category="reach"] .category-heading{color:#a74f56}.category-group[data-category="match"] .category-heading{color:#98701f}.category-group[data-category="safety"] .category-heading{color:#397551}.category-group[data-category="unclassified"] .category-heading{color:#5c7085}
+    .program-card{position:relative;margin:0 0 5mm;padding:12px 14px;border:1px solid #dbe4ee;border-radius:14px;background:#fff;break-inside:avoid;break-inside:avoid-page;page-break-inside:avoid;box-shadow:0 3px 10px rgba(23,45,74,.04)}
+    .program-card:before{content:"";position:absolute;top:-1px;right:13px;left:13px;height:3px;border-radius:0 0 3px 3px;background:#8092a5}.program-card.category-reach:before{background:#c87980}.program-card.category-match:before{background:#c7a04e}.program-card.category-safety:before{background:#6fa282}
     .program-card:last-child{margin-bottom:0}
     .program-head{display:flex;justify-content:space-between;gap:12px}
     .program-head h2{font-size:16px;line-height:1.25}.program-head p{color:#64748b}
-    .eyebrow{font-weight:800!important;color:#27659a!important;text-transform:uppercase}
+    .category-label{display:inline-block;margin-bottom:3px;padding:2px 7px;border-radius:999px;color:#3c5873!important;background:#edf2f7;font-weight:800!important}.category-reach .category-label{color:#8c4148!important;background:#fbe9ea}.category-match .category-label{color:#7f5d15!important;background:#fff3d5}.category-safety .category-label{color:#326746!important;background:#e7f3eb}
     .status{height:max-content;padding:3px 8px;border-radius:999px;background:#edf4fb;font-weight:700}
+    .suggested-category{margin-top:8px;padding:7px 9px;border-left:3px solid #8aa8c3;border-radius:7px;background:#f3f7fa;color:#52677c}.suggested-category b{display:block}.suggested-category ul{margin-top:3px}
     .fact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:9px 0}
     .fact-grid>div{min-width:0;padding:7px 8px;border-radius:8px;background:#f7f9fc}
     .fact-grid b,.fact-grid span,.deadline-fact small,.deadline-fact em{display:block}
@@ -812,33 +842,42 @@ export function buildSchoolListReportHtml(snapshot: PDFReportSnapshot) {
   <main class="report-source">
   <section class="cover">
     <header class="hero">
+      <img class="brand-logo" src="${escapeHtml(darkBrandUrl)}" alt="ApplyME">
       <h1>${escapeHtml(snapshot.reportMeta.title)}</h1>
-      <p class="meta">${zh ? "生成时间" : "Generated"}: ${escapeHtml(new Date(snapshot.reportMeta.generatedAt).toLocaleString(zh ? "zh-CN" : "en-US"))}</p>
+      <p class="meta"><span>${zh ? "生成日期" : "Generated"}: ${escapeHtml(generatedDate)}</span><span>${zh ? "申请季" : "Application cycle"}: ${escapeHtml(snapshot.reportMeta.applicationCycle)} Fall</span><span>${zh ? "报告类型" : "Report type"}: ${escapeHtml(reportType)}</span></p>
     </header>
-    ${personalized ? `<section class="summary">
+    <section class="summary">
       <div><span>${zh ? "项目总数" : "Total"}</span><b>${summary.totalPrograms}</b></div>
-      <div><span>${zh ? "冲刺" : "Reach"}</span><b>${summary.reachCount}</b></div>
-      <div><span>${zh ? "匹配" : "Match"}</span><b>${summary.matchCount}</b></div>
-      <div><span>${zh ? "保底" : "Safety"}</span><b>${summary.safetyCount}</b></div>
-    </section>` : `<section class="warnings"><h2>${zh ? "如何生成个性化选校分类" : "How to enable personalized categories"}</h2><p>${zh ? `请补充：${snapshot.reportMeta.profileMissingFields.join("、")}` : `Complete: ${snapshot.reportMeta.profileMissingFields.join(", ")}`}</p><p>${zh ? "当前报告仅整理候选项目，不显示没有解释依据的冲刺、匹配、保底 0 值。" : "This report is a candidate list and does not show unexplained zero Reach, Match, or Safety counts."}</p></section>`}
+      <div class="reach"><span>${zh ? "冲刺" : "Reach"}</span><b>${summary.reachCount}</b></div>
+      <div class="match"><span>${zh ? "匹配" : "Match"}</span><b>${summary.matchCount}</b></div>
+      <div class="safety"><span>${zh ? "保底" : "Safety"}</span><b>${summary.safetyCount}</b></div>
+      <div class="unclassified"><span>${zh ? "未分类" : "Unclassified"}</span><b>${summary.unclassifiedCount}</b></div>
+    </section>
+    ${!personalized ? `<section class="warnings"><h2>${zh ? "如何生成个性化系统参考" : "How to enable personalized suggestions"}</h2><p>${zh ? `请补充：${snapshot.reportMeta.profileMissingFields.join("、")}` : `Complete: ${snapshot.reportMeta.profileMissingFields.join(", ")}`}</p><p>${zh ? "当前报告保留“我的分类”；画像完整后，系统参考仍不会覆盖用户分类。" : "This report preserves My category. Suggested categories never override the user's category."}</p></section>` : ""}
     ${warnings.length ? `<section class="warnings"><h2>${zh ? "数据提醒" : "Data warnings"}</h2><ul>${warnings.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
     <p class="cover-note">${zh ? "申请要求可能随申请周期变化，请在提交前前往大学官网再次核实。" : "Requirements may change by application cycle. Verify all information on official university websites before applying."}</p>
   </section>
-  <section class="program-list">${snapshot.programs.map(program => projectCard(program, language)).join("")}<p class="report-footer">${zh ? "报告结束" : "End of report"}</p></section>
+  <section class="program-list">${categoryGroups.map(group => group.html).join("")}<p class="report-footer">${zh ? "报告结束" : "End of report"}</p></section>
   </main>
   <div class="report-pages" aria-label="${zh ? "PDF 报告预览" : "PDF report preview"}"></div>
   <script>
     (() => {
       const pagesRoot = document.querySelector(".report-pages");
       const cover = document.querySelector(".report-source .cover");
-      const cards = [...document.querySelectorAll(".report-source .program-card")];
+      const groups = [...document.querySelectorAll(".report-source .category-group")];
       const endLabel = ${JSON.stringify(zh ? "报告结束" : "End of report")};
       const footerTitle = ${JSON.stringify(snapshot.reportMeta.title)};
-      const makePage = () => {
+      const makePage = (withBrand = true) => {
         const page = document.createElement("section");
         page.className = "pdf-page";
         const content = document.createElement("div");
         content.className = "page-content";
+        if (withBrand) {
+          const brand = document.createElement("header");
+          brand.className = "page-brand";
+          brand.innerHTML = ${JSON.stringify(`<img class="brand-logo" src="${brandUrl}" alt="ApplyME">`)};
+          content.append(brand);
+        }
         const footer = document.createElement("footer");
         footer.className = "page-footer";
         footer.innerHTML = "<span></span><span></span>";
@@ -846,21 +885,26 @@ export function buildSchoolListReportHtml(snapshot: PDFReportSnapshot) {
         pagesRoot.append(page);
         return { page, content, footer };
       };
-      const coverPage = makePage();
+      const coverPage = makePage(false);
       coverPage.content.append(cover.cloneNode(true));
       let current = makePage();
-      for (const sourceCard of cards) {
-        const card = sourceCard.cloneNode(true);
-        current.content.append(card);
-        if (current.content.scrollHeight > current.content.clientHeight) {
-          card.remove();
-          if (!current.content.children.length) {
-            current.content.append(card);
-            card.style.breakInside = "auto";
+      for (const sourceGroup of groups) {
+        const sourceHeading = sourceGroup.querySelector(".category-heading");
+        const sourceCards = [...sourceGroup.querySelectorAll(".program-card")];
+        for (let index = 0; index < sourceCards.length; index += 1) {
+          const heading = index === 0 ? sourceHeading.cloneNode(true) : null;
+          const card = sourceCards[index].cloneNode(true);
+          if (heading) current.content.append(heading);
+          current.content.append(card);
+          if (current.content.scrollHeight > current.content.clientHeight) {
+            card.remove();
+            if (heading) heading.remove();
             current = makePage();
-          } else {
-            current = makePage();
+            if (heading) current.content.append(heading);
             current.content.append(card);
+            if (current.content.scrollHeight > current.content.clientHeight) {
+              card.style.breakInside = "auto";
+            }
           }
         }
       }
@@ -900,7 +944,11 @@ export function exportSchoolListPdf({
   if (!result.snapshot) {
     throw new Error(language === "zh" ? "无法生成选校报告" : "Unable to generate report");
   }
-  const reportBlob = new Blob([buildSchoolListReportHtml(result.snapshot)], {
+  const basePath = window.location.pathname.startsWith("/applyme-2027-fall/")
+    ? "/applyme-2027-fall"
+    : "";
+  const brandUrl = new URL(`${basePath}/brand/applyme-horizontal.png`, window.location.origin).href;
+  const reportBlob = new Blob([buildSchoolListReportHtml(result.snapshot, brandUrl)], {
     type: "text/html;charset=utf-8",
   });
   const reportUrl = URL.createObjectURL(reportBlob);

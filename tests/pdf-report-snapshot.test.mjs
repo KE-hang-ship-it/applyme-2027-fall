@@ -130,6 +130,32 @@ test("program ordering and Reach / Match / Safety counts are stable", () => {
   });
 });
 
+test("all four user categories remain authoritative and keep PDF / Excel ordering", () => {
+  const categories = ["reach", "match", "safety", "unclassified"];
+  const programs = categories.map((category, index) =>
+    legacy(`category-${category}`, {
+      school: `${index} ${category} University`,
+      normalizedSchoolName: `${index} ${category} university`,
+    }),
+  );
+  const result = createPDFReportSnapshot({
+    ...fixed,
+    programs,
+    selections: categories.map((category) => selection(`category-${category}`, category)),
+  });
+  assert.deepEqual(result.snapshot.programs.map((program) => program.category), categories);
+  assert.deepEqual(result.snapshot.selectionSummary, {
+    totalPrograms: 4,
+    reachCount: 1,
+    matchCount: 1,
+    safetyCount: 1,
+    reviewCount: 0,
+    missingDataCount: 4,
+    historicalDataCount: 0,
+    unclassifiedCount: 1,
+  });
+});
+
 test("missing profile downgrades to a candidate list without misleading zero categories", () => {
   const programs = [
     legacy("candidate-a"),
@@ -174,8 +200,10 @@ test("complete profile produces explainable reference categories for unclassifie
   });
   const program = result.snapshot.programs[0];
   assert.equal(result.snapshot.reportMeta.reportMode, "personalized");
+  assert.equal(program.category, "unclassified");
   assert.equal(program.categoryDecision.origin, "rule");
   assert.equal(program.categoryDecision.referenceOnly, true);
+  assert.notEqual(program.categoryDecision.value, "unclassified");
   assert.ok(program.categoryDecision.rationale.some(item => item.includes("not an admission probability")));
 });
 
@@ -220,13 +248,11 @@ test("the seven mechanical-engineering regression projects use ProgramV2, classi
   });
   assert.equal(result.snapshot.reportMeta.reportMode, "personalized");
   assert.equal(result.snapshot.selectionSummary.totalPrograms, 7);
-  assert.equal(result.snapshot.selectionSummary.unclassifiedCount, 0);
-  assert.equal(
-    result.snapshot.selectionSummary.reachCount +
-      result.snapshot.selectionSummary.matchCount +
-      result.snapshot.selectionSummary.safetyCount,
-    7,
-  );
+  assert.equal(result.snapshot.selectionSummary.unclassifiedCount, 7);
+  assert.equal(result.snapshot.selectionSummary.reachCount, 0);
+  assert.equal(result.snapshot.selectionSummary.matchCount, 0);
+  assert.equal(result.snapshot.selectionSummary.safetyCount, 0);
+  assert.ok(result.snapshot.programs.every(program => program.categoryDecision.origin === "rule"));
   assert.ok(result.snapshot.programs.every(program => program.canonicalProgramId));
   const vtech = result.snapshot.programs.find(program => program.legacyId === "vtech-me");
   assert.deepEqual(
